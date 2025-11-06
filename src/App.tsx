@@ -5,13 +5,14 @@ import LandingPage from './pages/LandingPage';
 import ResultsPage from './pages/ResultsPage';
 import POIDetailPage from './pages/POIDetailPage';
 import RouteGenerator from './pages/RouteGenerator';
+import TimeWeatherPage from './pages/TimeWeatherPage';
 import StickyHeader from './components/StickyHeader';
 import FloatingChatButton from './components/FloatingChatButton';
 import { GroupType } from './components/GroupFilter';
 import './App.css';
 
 // Page types
-type PageType = 'landing' | 'results' | 'poi-detail' | 'route-generator';
+type PageType = 'landing' | 'results' | 'poi-detail' | 'route-generator' | 'time-weather';
 
 // API Response type
 interface APIResponsePOI {
@@ -671,6 +672,16 @@ function App() {
           <RouteGenerator
             pois={routePOIs}
             onNavigate={(page: string) => navigateToPage(page as PageType)}
+          />
+        );
+      case 'time-weather':
+        return (
+          <TimeWeatherPage
+            onSearch={handleSearchSubmit}
+            isLoading={isLoading}
+            userLocation={userLocation}
+            selectedGroup={selectedGroup}
+            onGroupChange={setSelectedGroup}
           />
         );
       default:
