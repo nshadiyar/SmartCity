@@ -1,0 +1,209 @@
+/* Сценарии использования */
+.scenario-selector {
+  margin-bottom: 40px;
+  padding: 30px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.8) 100%);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.05),
+    0 1px 8px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
+}
+
+.scenario-selector h3 {
+  margin: 0 0 20px 0;
+  color: #1f2937;
+  font-size: 1.4rem;
+  font-weight: 700;
+  text-align: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.scenario-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.scenario-button {
+  padding: 24px;
+  border: 2px solid rgba(229, 231, 235, 0.5);
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(248, 250, 252, 0.6) 100%);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.05),
+    0 1px 4px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(5px);
+  position: relative;
+  overflow: hidden;
+}
+
+.scenario-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.1), transparent);
+  transition: left 0.6s ease;
+}
+
+.scenario-button:hover {
+  transform: translateY(-4px) scale(1.02);
+  border-color: rgba(102, 126, 234, 0.3);
+  box-shadow:
+    0 12px 32px rgba(102, 126, 234, 0.15),
+    0 4px 16px rgba(102, 126, 234, 0.1);
+}
+
+.scenario-button:hover::before {
+  left: 100%;
+}
+
+.scenario-button.selected {
+  border-color: #667eea;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+  box-shadow:
+    0 8px 24px rgba(102, 126, 234, 0.2),
+    0 4px 12px rgba(102, 126, 234, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+.scenario-button.selected::after {
+  content: '✓';
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  color: #667eea;
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.scenario-title {
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: #1f2937;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.scenario-title::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.scenario-description {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+.scenario-example {
+  font-size: 0.85rem;
+  color: #374151;
+  font-style: italic;
+  background: linear-gradient(135deg, rgba(243, 244, 246, 0.8) 0%, rgba(229, 231, 235, 0.6) 100%);
+  padding: 12px 16px;
+  border-radius: 12px;
+  border-left: 4px solid #667eea;
+  backdrop-filter: blur(5px);
+  position: relative;
+}
+
+.scenario-example::before {
+  content: '"';
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  color: #9ca3af;
+  font-size: 1.2rem;
+  font-style: normal;
+}
+
+.scenario-example::after {
+  content: '"';
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  color: #9ca3af;
+  font-size: 1.2rem;
+  font-style: normal;
+}
+
+.selected-scenario-notice {
+  margin-top: 20px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, rgba(232, 245, 232, 0.8) 0%, rgba(200, 230, 201, 0.6) 100%);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 12px;
+  color: #059669;
+  font-weight: 600;
+  text-align: center;
+  backdrop-filter: blur(5px);
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.1);
+}
+
+.selected-scenario-notice::before {
+  content: '🎯';
+  margin-right: 8px;
+}
+
+/* Адаптивность для сценариев */
+@media (max-width: 768px) {
+  .scenario-selector {
+    padding: 25px;
+    margin-bottom: 35px;
+  }
+
+  .scenario-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .scenario-button {
+    padding: 20px;
+  }
+
+  .scenario-title {
+    font-size: 1rem;
+  }
+
+  .scenario-description {
+    font-size: 0.85rem;
+  }
+
+  .scenario-example {
+    font-size: 0.8rem;
+    padding: 10px 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .scenario-selector {
+    padding: 20px;
+  }
+
+  .scenario-button {
+    padding: 18px;
+  }
+
+  .scenario-title {
+    font-size: 0.95rem;
+  }
+}
