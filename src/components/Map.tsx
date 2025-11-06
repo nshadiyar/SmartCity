@@ -261,7 +261,17 @@ const Map: React.FC<MapProps> = ({
 
     // Добавляем маркеры рекомендаций
     recommendations.forEach(rec => {
+      // Проверяем наличие POI и координат
+      if (!rec.poi || !rec.poi.coordinates) {
+        console.warn('POI или координаты отсутствуют:', rec);
+        return;
+      }
+
       const markerIcon = createCustomIcon('#10b981', '🎯');
+      
+      // Безопасная обработка имени POI
+      const poiName = rec.poi?.name || 'Место';
+      const safePoiName = poiName.replace(/'/g, "\\'");
 
       const marker = window.L.marker([rec.poi.coordinates.lat, rec.poi.coordinates.lng], {
         icon: markerIcon
@@ -269,15 +279,15 @@ const Map: React.FC<MapProps> = ({
         .addTo(map)
         .bindPopup(`
           <div style="max-width: 280px;">
-            <h4 style="margin: 0 0 8px 0; color: #059669;">${rec.poi.name}</h4>
-            <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 14px;">${rec.poi.description}</p>
+            <h4 style="margin: 0 0 8px 0; color: #059669;">${poiName}</h4>
+            <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 14px;">${rec.poi.description || ''}</p>
             <div style="background: #f0fdf4; padding: 8px; border-radius: 6px; margin-bottom: 8px;">
               <strong style="color: #059669;">💡 Почему рекомендую:</strong><br>
-              <span style="font-size: 13px;">${rec.why}</span>
+              <span style="font-size: 13px;">${rec.why || ''}</span>
             </div>
             <div style="background: #fef3c7; padding: 8px; border-radius: 6px; margin-bottom: 12px;">
               <strong style="color: #d97706;">🎯 План действий:</strong><br>
-              <span style="font-size: 13px;">${rec.plan}</span>
+              <span style="font-size: 13px;">${rec.plan || ''}</span>
             </div>
             <div style="font-size: 12px; color: #9ca3af; margin-bottom: 12px;">
               📍 ${rec.distance}м • 🚶‍♂️ ${rec.walkingTime} мин<br>
@@ -285,7 +295,7 @@ const Map: React.FC<MapProps> = ({
               ${rec.poi.workingHours ? `<strong>Время работы:</strong> ${rec.poi.workingHours}<br>` : ''}
             </div>
             <div style="display: flex; gap: 8px;">
-              <button onclick="window.mapCreateRoute && window.mapCreateRoute(${currentLocation?.lat || userLocation?.lat || 51.1694}, ${currentLocation?.lng || userLocation?.lng || 71.4491}, ${rec.poi.coordinates.lat}, ${rec.poi.coordinates.lng}, '${rec.poi.name.replace(/'/g, "\\'")}')" style="
+              <button onclick="window.mapCreateRoute && window.mapCreateRoute(${currentLocation?.lat || userLocation?.lat || 51.1694}, ${currentLocation?.lng || userLocation?.lng || 71.4491}, ${rec.poi.coordinates.lat}, ${rec.poi.coordinates.lng}, '${safePoiName}')" style="
                 flex: 1;
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                 color: white;
