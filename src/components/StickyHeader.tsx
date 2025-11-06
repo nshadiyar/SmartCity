@@ -25,6 +25,12 @@ const StickyHeader: React.FC<StickyHeaderProps> = ({ onNavigate }) => {
           </button>
           <button
             className="nav-link"
+            onClick={() => onNavigate('time-weather')}
+          >
+            🌤️ Time & Weather
+          </button>
+          <button
+            className="nav-link"
             onClick={() => onNavigate('results')}
           >
             My Walks
