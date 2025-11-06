@@ -47,9 +47,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onSearch, isLoading, selected
     <div className="landing-page">
       {/* Hero Section */}
       <section className="hero">
-        <div className="hero-background">
-          <div className="hero-overlay"></div>
-          <div className="hero-content">
+        <div className="hero-content">
             <h1 className="hero-title">
               Discover Astana
               <br />
@@ -109,7 +107,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onSearch, isLoading, selected
               </div>
             </div>
           </div>
-        </div>
       </section>
 
       {/* Features Section */}

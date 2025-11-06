@@ -15,6 +15,7 @@ interface MapProps {
   className?: string;
   height?: string;
   onLocationUpdate?: (location: UserGeolocation) => void;
+  selectedPOI?: POI | null; // Выбранный POI для построения маршрута
 }
 
 const Map: React.FC<MapProps> = ({
@@ -23,7 +24,8 @@ const Map: React.FC<MapProps> = ({
   pois = [],
   className = '',
   height = '400px',
-  onLocationUpdate
+  onLocationUpdate,
+  selectedPOI = null
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<any>(null);
@@ -381,6 +383,38 @@ const Map: React.FC<MapProps> = ({
       }
     };
   }, [createRoute]);
+
+  // Функция для сброса маршрута
+  const clearRoute = useCallback(() => {
+    if (!map || !routingControl) return;
+    map.removeControl(routingControl);
+    setRoutingControl(null);
+    console.log('🗺️ [MAP] Маршрут сброшен');
+  }, [map, routingControl]);
+
+  // Автоматическое построение маршрута при выборе POI
+  useEffect(() => {
+    if (!map || !userLocation) return;
+
+    // Если selectedPOI null, сбрасываем маршрут
+    if (!selectedPOI) {
+      clearRoute();
+      return;
+    }
+
+    const startLat = userLocation.lat;
+    const startLng = userLocation.lng;
+    const endLat = selectedPOI.coordinates.lat;
+    const endLng = selectedPOI.coordinates.lng;
+
+    console.log('🗺️ [MAP] Построение маршрута:', {
+      from: { lat: startLat, lng: startLng },
+      to: { lat: endLat, lng: endLng },
+      poiName: selectedPOI.name
+    });
+
+    createRoute(startLat, startLng, endLat, endLng, selectedPOI.name);
+  }, [selectedPOI, map, userLocation, createRoute, clearRoute]);
 
   return (
     <div className={`map-container ${className}`}>

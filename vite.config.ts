@@ -9,14 +9,7 @@ export default defineConfig({
       '/api/n8n': {
         target: 'https://nshadiyar.app.n8n.cloud',
         changeOrigin: true,
-        rewrite: (path) => {
-          // POST запросы: /api/n8n -> /webhook/chat
-          // GET запросы: /api/n8n/results?sessionId=... -> /webhook/chat/results?sessionId=...
-          if (path.includes('/results')) {
-            return path.replace(/^\/api\/n8n/, '/webhook/chat');
-          }
-          return path.replace(/^\/api\/n8n/, '/webhook/chat');
-        },
+        rewrite: (path) => path.replace(/^\/api\/n8n/, '/webhook/chat'),
         secure: true,
       },
     },

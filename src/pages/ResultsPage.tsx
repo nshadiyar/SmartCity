@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Recommendation, UserQuery } from '../types';
 import Map from '../components/Map';
 import GroupFilter, { GroupType } from '../components/GroupFilter';
@@ -26,12 +26,20 @@ const ResultsPage: React.FC<ResultsPageProps> = ({
   onGroupChange,
   onRefetch
 }) => {
+  const [selectedPOIForRoute, setSelectedPOIForRoute] = useState<any>(null);
+
   const handleGroupChange = (group: GroupType) => {
     onGroupChange(group);
     // Пересчитываем рекомендации при изменении группы
     setTimeout(() => {
       onRefetch();
     }, 100);
+  };
+
+  const handleNavigate = (poi: any) => {
+    setSelectedPOIForRoute(poi);
+    // Также открываем страницу деталей POI
+    onPOISelect(poi);
   };
   const getCategoryIcon = (category: string) => {
     const icons: { [key: string]: string } = {
@@ -91,6 +99,7 @@ const ResultsPage: React.FC<ResultsPageProps> = ({
             pois={[]}
             height="600px"
             onLocationUpdate={() => {}}
+            selectedPOI={selectedPOIForRoute}
           />
         </div>
 
@@ -150,7 +159,7 @@ const ResultsPage: React.FC<ResultsPageProps> = ({
                   </button>
                   <button
                     className="action-btn primary"
-                    onClick={() => onPOISelect(rec.poi)}
+                    onClick={() => handleNavigate(rec.poi)}
                   >
                     Navigate
                   </button>

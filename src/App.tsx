@@ -269,80 +269,6 @@ function App() {
   };
 
 
-  // Функция для получения результатов через GET запрос
-  const fetchResultsFromAPI = async (sessionId: string): Promise<APIResponsePOI[]> => {
-    const getUrl = import.meta.env.DEV 
-      ? `/api/n8n/results?sessionId=${sessionId}`  // Прокси через Vite dev server
-      : `https://nshadiyar.app.n8n.cloud/webhook/chat/results?sessionId=${sessionId}`;  // Прямой запрос в продакшене
-
-    console.log('🔄 [GET REQUEST] Получение результатов по sessionId');
-    console.log('📍 GET URL:', getUrl);
-    console.log('🆔 Session ID:', sessionId);
-
-    try {
-      // Ждем немного, чтобы workflow успел обработать запрос
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      const startTime = Date.now();
-      const response = await fetch(getUrl, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      const endTime = Date.now();
-      const duration = endTime - startTime;
-
-      console.log('⏱️ [GET RESPONSE] Время ответа:', `${duration}ms`);
-      console.log('📊 [GET RESPONSE] HTTP Status:', response.status, response.statusText);
-
-      if (!response.ok) {
-        console.warn('⚠️ [GET RESPONSE] HTTP error!', {
-          status: response.status,
-          statusText: response.statusText,
-        });
-        return [];
-      }
-
-      const contentType = response.headers.get('content-type');
-      console.log('📄 [GET RESPONSE] Content-Type:', contentType);
-
-      if (contentType && contentType.includes('application/json')) {
-        const data = await response.json();
-        console.log('✅ [GET RESPONSE] JSON данные получены');
-        console.log('📦 [GET RESPONSE] Тип данных:', typeof data);
-        console.log('📦 [GET RESPONSE] Является массивом:', Array.isArray(data));
-        console.log('📦 [GET RESPONSE] Полные данные:', JSON.stringify(data, null, 2));
-
-        if (Array.isArray(data)) {
-          console.log('✅ [GET RESPONSE] Данные - массив POI');
-          return data;
-        } else if (data && typeof data === 'object') {
-          // Проверяем поля с результатами
-          if (data.results && Array.isArray(data.results)) {
-            console.log('✅ [GET RESPONSE] Найден массив в поле "results"');
-            return data.results;
-          }
-          if (data.data && Array.isArray(data.data)) {
-            console.log('✅ [GET RESPONSE] Найден массив в поле "data"');
-            return data.data;
-          }
-          if (data.pois && Array.isArray(data.pois)) {
-            console.log('✅ [GET RESPONSE] Найден массив в поле "pois"');
-            return data.pois;
-          }
-        }
-      }
-
-      console.log('⚠️ [GET RESPONSE] Не удалось получить результаты');
-      return [];
-    } catch (error) {
-      console.error('❌ [GET ERROR] Ошибка при GET запросе:', error);
-      return [];
-    }
-  };
-
   // Функция для запроса к n8n API
   const fetchRecommendationsFromAPI = async (chatInput: string): Promise<APIResponsePOI[]> => {
     const requestBody = {
@@ -419,38 +345,37 @@ function App() {
         }
       }
 
-      // Проверяем структуру данных
+      // Проверяем структуру данных - API возвращает массив POI напрямую
       if (Array.isArray(data)) {
         console.log('✅ [API RESPONSE] Данные - массив POI');
+        console.log('📊 [API RESPONSE] Количество POI:', data.length);
         if (data.length > 0) {
           console.log('📋 [API RESPONSE] Первый элемент:', JSON.stringify(data[0], null, 2));
         }
-        return data;
+        return data as APIResponsePOI[];
       } else if (data && typeof data === 'object') {
         console.log('⚠️ [API RESPONSE] Данные - объект, не массив');
         console.log('📋 [API RESPONSE] Ключи объекта:', Object.keys(data));
         
-        // Если workflow запущен асинхронно, пытаемся получить результаты через GET
-        if (data.message && data.message.includes('Workflow was started')) {
-          console.log('🔄 [API] Workflow запущен асинхронно, пытаемся получить результаты...');
-          return await fetchResultsFromAPI(sessionId);
-        }
-        
         // Проверяем, может быть данные в каком-то поле
         if (data.results && Array.isArray(data.results)) {
           console.log('✅ [API RESPONSE] Найден массив в поле "results"');
-          return data.results;
+          return data.results as APIResponsePOI[];
         }
         if (data.data && Array.isArray(data.data)) {
           console.log('✅ [API RESPONSE] Найден массив в поле "data"');
-          return data.data;
+          return data.data as APIResponsePOI[];
         }
         if (data.pois && Array.isArray(data.pois)) {
           console.log('✅ [API RESPONSE] Найден массив в поле "pois"');
-          return data.pois;
+          return data.pois as APIResponsePOI[];
         }
         
-        // Если объект содержит массив напрямую
+        // Если объект содержит сообщение об ошибке или статусе
+        if (data.message) {
+          console.log('⚠️ [API RESPONSE] Сообщение от API:', data.message);
+        }
+        
         console.log('⚠️ [API RESPONSE] Объект не содержит массив, возвращаем пустой массив');
         return [];
       } else {
@@ -474,8 +399,8 @@ function App() {
     console.log('📋 [CONVERT] Входные данные API POI:', JSON.stringify(apiPOI, null, 2));
     
     // Используем координаты из API или центр Астаны
-    const poiLat = apiPOI.latitude || 51.1694;
-    const poiLng = apiPOI.longitude || 71.4491;
+    const poiLat = (apiPOI.latitude !== null && apiPOI.latitude !== undefined) ? apiPOI.latitude : 51.1694;
+    const poiLng = (apiPOI.longitude !== null && apiPOI.longitude !== undefined) ? apiPOI.longitude : 71.4491;
     
     console.log('📍 [CONVERT] Координаты POI:', { lat: poiLat, lng: poiLng });
     console.log('📍 [CONVERT] Координаты пользователя:', userLoc);
@@ -496,12 +421,26 @@ function App() {
       coordinates: { lat: poiLat, lng: poiLng },
       rating: undefined,
       workingHours: apiPOI.working_hours || '',
+      phone: apiPOI.phone || '',
+      website: apiPOI.website || '',
+      paymentMethods: apiPOI.payment_methods || '',
+      whatsapp: apiPOI.whatsapp || '',
+      telegram: apiPOI.telegram || '',
+      facebook: apiPOI.facebook || '',
+      instagram: apiPOI.instagram || '',
+      region: apiPOI.region || '',
+      district: apiPOI.district || '',
+      city: apiPOI.city || '',
+      cityDistrict: apiPOI.city_district || '',
+      postalCode: apiPOI.postal_code || '',
+      subcategory: apiPOI.subcategory || '',
       tags: [
         apiPOI.category?.toLowerCase() || '',
         apiPOI.subcategory?.toLowerCase() || '',
         ...(apiPOI.why?.toLowerCase().includes('тих') ? ['тихое'] : []),
         ...(apiPOI.why?.toLowerCase().includes('дет') ? ['дети'] : []),
-        ...(apiPOI.why?.toLowerCase().includes('кафе') ? ['кафе'] : [])
+        ...(apiPOI.why?.toLowerCase().includes('кафе') ? ['кафе'] : []),
+        ...(apiPOI.why?.toLowerCase().includes('туалет') ? ['туалет'] : [])
       ].filter(Boolean)
     };
 
