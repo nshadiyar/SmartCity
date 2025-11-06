@@ -452,11 +452,131 @@ body {
   line-height: 1.6;
 }
 
+/* Group Filter */
+.group-filter-section {
+  margin-top: 2rem;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.group-filter {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.group-filter-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: white;
+  margin: 0 0 1rem 0;
+  text-align: center;
+}
+
+.group-options {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+}
+
+.group-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-md);
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
+  text-align: left;
+}
+
+.group-option:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+.group-option.active {
+  background: rgba(59, 130, 246, 0.3);
+  border-color: var(--primary-blue);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+}
+
+.group-icon {
+  font-size: 1.75rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.group-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.group-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.group-description {
+  font-size: 0.75rem;
+  opacity: 0.8;
+  line-height: 1.2;
+}
+
 /* Results Page */
 .results-page {
   padding: 24px;
   max-width: 1400px;
   margin: 0 auto;
+}
+
+.results-group-filter {
+  margin-bottom: 24px;
+  background: var(--bg-white);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  box-shadow: var(--shadow-md);
+}
+
+.results-group-filter .group-filter {
+  background: transparent;
+  backdrop-filter: none;
+  border: none;
+  padding: 0;
+}
+
+.results-group-filter .group-filter-title {
+  color: var(--text-primary);
+  margin-bottom: 16px;
+}
+
+.results-group-filter .group-option {
+  background: var(--bg-light);
+  border: 2px solid var(--border);
+  color: var(--text-primary);
+}
+
+.results-group-filter .group-option:hover {
+  background: var(--bg-white);
+  border-color: var(--primary-blue);
+}
+
+.results-group-filter .group-option.active {
+  background: var(--primary-blue-light);
+  border-color: var(--primary-blue);
+  color: var(--primary-blue-dark);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
 }
 
 .results-header {
@@ -2172,6 +2292,32 @@ body {
 
   .chat-icon {
     font-size: 20px;
+  }
+
+  /* Group Filter Mobile */
+  .group-options {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  .group-option {
+    padding: 10px 12px;
+  }
+
+  .group-icon {
+    font-size: 1.5rem;
+  }
+
+  .group-label {
+    font-size: 0.8rem;
+  }
+
+  .group-description {
+    font-size: 0.7rem;
+  }
+
+  .results-group-filter {
+    padding: 16px;
   }
 
   /* Карта мобильная адаптация */

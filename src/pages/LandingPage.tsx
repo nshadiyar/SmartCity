@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import { UserQuery } from '../types';
+import GroupFilter, { GroupType } from '../components/GroupFilter';
 
 interface LandingPageProps {
   onSearch: (query: UserQuery) => void;
   isLoading: boolean;
   onNavigate: (page: string) => void;
+  selectedGroup: GroupType;
+  onGroupChange: (group: GroupType) => void;
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({ onSearch, isLoading }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ onSearch, isLoading, selectedGroup, onGroupChange }) => {
   const [activity, setActivity] = useState('');
 
   const handleSearch = () => {
@@ -79,6 +82,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onSearch, isLoading }) => {
               >
                 {isLoading ? 'Finding your walk...' : 'Find my walk'}
               </button>
+            </div>
+
+            {/* Group Filter */}
+            <div className="group-filter-section">
+              <GroupFilter
+                selectedGroup={selectedGroup}
+                onGroupChange={onGroupChange}
+              />
             </div>
 
             {/* Quick Search Pills */}

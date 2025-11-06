@@ -7,12 +7,43 @@ import POIDetailPage from './pages/POIDetailPage';
 import RouteGenerator from './pages/RouteGenerator';
 import StickyHeader from './components/StickyHeader';
 import FloatingChatButton from './components/FloatingChatButton';
+import { GroupType } from './components/GroupFilter';
 import './App.css';
 
 // Page types
 type PageType = 'landing' | 'results' | 'poi-detail' | 'route-generator';
 
+// API Response type
+interface APIResponsePOI {
+  why: string;
+  name: string;
+  region: string;
+  district: string;
+  city: string;
+  city_district: string;
+  address: string;
+  phone: string;
+  postal_code: string;
+  website: string;
+  category: string;
+  subcategory: string;
+  working_hours: string;
+  payment_methods: string;
+  whatsapp: string;
+  telegram: string;
+  facebook: string;
+  instagram: string;
+  latitude: number | null;
+  longitude: number | null;
+}
+
+// Генерация sessionId
+const generateSessionId = (): string => {
+  return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+};
+
 function App() {
+  const [sessionId] = useState<string>(() => generateSessionId());
   const [currentPage, setCurrentPage] = useState<PageType>('landing');
   const [selectedPOI, setSelectedPOI] = useState<any>(null);
   const [routePOIs, setRoutePOIs] = useState<any[]>([]);
@@ -21,6 +52,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [searchQuery, setSearchQuery] = useState<UserQuery | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<GroupType>('alone');
 
   // Автоматическое определение геолокации
   const getCurrentLocation = (): Promise<{ lat: number; lng: number }> => {
@@ -70,9 +102,35 @@ function App() {
   };
 
   // Функция для поиска рекомендаций (имитация RAG)
-  const findRecommendations = (query: UserQuery): Recommendation[] => {
+  const findRecommendations = (query: UserQuery, groupType: GroupType = 'alone'): Recommendation[] => {
     // Используем реальную геолокацию пользователя
     const currentLocation = userLocation || { lat: 51.1694, lng: 71.4491 };
+
+    // Определяем приоритетные теги и категории в зависимости от группы
+    const groupPreferences: { [key in GroupType]: { tags: string[], categories: string[], keywords: string[] } } = {
+      alone: {
+        tags: ['тихое', 'спокойное', 'уединенное', 'книги', 'чтение'],
+        categories: ['Библиотека', 'Парк', 'Кафе'],
+        keywords: ['тихое', 'спокойное', 'уединенное']
+      },
+      friends: {
+        tags: ['кафе', 'ресторан', 'активность', 'развлечения', 'веселье'],
+        categories: ['Кафе', 'Ресторан', 'Развлечения'],
+        keywords: ['кафе', 'ресторан', 'активность']
+      },
+      family: {
+        tags: ['дети', 'семьи', 'парк', 'музей', 'площадка', 'безопасное'],
+        categories: ['Парк', 'Музей', 'Развлечения'],
+        keywords: ['дети', 'семьи', 'парк', 'музей']
+      },
+      work: {
+        tags: ['коворкинг', 'кафе', 'wifi', 'розетки', 'тихое', 'работа'],
+        categories: ['Кафе', 'Коворкинг', 'Библиотека'],
+        keywords: ['коворкинг', 'wifi', 'работа', 'тихое']
+      }
+    };
+
+    const groupPrefs = groupPreferences[groupType];
 
     // Фильтрация и ранжирование POI
     const filteredPOIs = mockPOIs
@@ -92,10 +150,14 @@ function App() {
         // Проверка соответствия тегам
         poi.tags.forEach(tag => {
           if (preferences.includes(tag)) score += 2;
+          // Бонус за соответствие групповым предпочтениям
+          if (groupPrefs.tags.some(pref => tag.includes(pref))) score += 3;
         });
 
         // Проверка категории
         if (preferences.includes(poi.category)) score += 3;
+        // Бонус за соответствие групповым категориям
+        if (groupPrefs.categories.includes(poi.category)) score += 4;
 
         // Учет времени доступности
         if (query.timeAvailable.includes('час') && walkingTime > 60) score -= 1;
@@ -105,6 +167,20 @@ function App() {
         if (query.withChildren && poi.tags.includes('дети')) score += 2;
         if (query.withChildren && poi.tags.includes('семьи')) score += 2;
 
+        // Специальные бонусы для групп
+        if (groupType === 'family' && (poi.tags.includes('дети') || poi.tags.includes('семьи'))) {
+          score += 5;
+        }
+        if (groupType === 'work' && (poi.tags.includes('wifi') || poi.tags.includes('розетки') || poi.tags.includes('коворкинг'))) {
+          score += 5;
+        }
+        if (groupType === 'alone' && (poi.tags.includes('тихое') || poi.tags.includes('спокойное'))) {
+          score += 5;
+        }
+        if (groupType === 'friends' && (poi.tags.includes('кафе') || poi.tags.includes('ресторан') || poi.tags.includes('активность'))) {
+          score += 5;
+        }
+
         // Бонус за рейтинг
         if (poi.rating) score += poi.rating * 0.5;
 
@@ -113,7 +189,7 @@ function App() {
           distance: Math.round(distance),
           walkingTime,
           score,
-          why: generateWhyText(poi, query),
+          why: generateWhyText(poi, query, groupType),
           plan: generatePlanText(poi, query),
           estimatedDuration: estimateDuration(poi, query)
         };
@@ -126,11 +202,25 @@ function App() {
   };
 
   // Генерация текста "почему"
-  const generateWhyText = (poi: any, query: UserQuery): string => {
+  const generateWhyText = (poi: any, query: UserQuery, groupType: GroupType = 'alone'): string => {
     const reasons = [];
 
+    // Групповые причины
+    if (groupType === 'family' && (poi.tags.includes('дети') || poi.tags.includes('семьи'))) {
+      reasons.push('отлично подходит для семейного отдыха');
+    }
+    if (groupType === 'friends' && (poi.tags.includes('кафе') || poi.tags.includes('ресторан'))) {
+      reasons.push('идеальное место для встречи с друзьями');
+    }
+    if (groupType === 'work' && (poi.tags.includes('wifi') || poi.tags.includes('розетки'))) {
+      reasons.push('удобное место для работы');
+    }
+    if (groupType === 'alone' && (poi.tags.includes('тихое') || poi.tags.includes('спокойное'))) {
+      reasons.push('тихое и уединенное место');
+    }
+
     if (poi.tags.some((tag: string) => query.preferences.includes(tag))) {
-      reasons.push(`соответствует вашим предпочтениям (${poi.tags.join(', ')})`);
+      reasons.push(`соответствует вашим предпочтениям`);
     }
 
     if (poi.rating && poi.rating > 4) {
@@ -179,6 +269,277 @@ function App() {
   };
 
 
+  // Функция для получения результатов через GET запрос
+  const fetchResultsFromAPI = async (sessionId: string): Promise<APIResponsePOI[]> => {
+    const getUrl = import.meta.env.DEV 
+      ? `/api/n8n/results?sessionId=${sessionId}`  // Прокси через Vite dev server
+      : `https://nshadiyar.app.n8n.cloud/webhook/chat/results?sessionId=${sessionId}`;  // Прямой запрос в продакшене
+
+    console.log('🔄 [GET REQUEST] Получение результатов по sessionId');
+    console.log('📍 GET URL:', getUrl);
+    console.log('🆔 Session ID:', sessionId);
+
+    try {
+      // Ждем немного, чтобы workflow успел обработать запрос
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      const startTime = Date.now();
+      const response = await fetch(getUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+
+      console.log('⏱️ [GET RESPONSE] Время ответа:', `${duration}ms`);
+      console.log('📊 [GET RESPONSE] HTTP Status:', response.status, response.statusText);
+
+      if (!response.ok) {
+        console.warn('⚠️ [GET RESPONSE] HTTP error!', {
+          status: response.status,
+          statusText: response.statusText,
+        });
+        return [];
+      }
+
+      const contentType = response.headers.get('content-type');
+      console.log('📄 [GET RESPONSE] Content-Type:', contentType);
+
+      if (contentType && contentType.includes('application/json')) {
+        const data = await response.json();
+        console.log('✅ [GET RESPONSE] JSON данные получены');
+        console.log('📦 [GET RESPONSE] Тип данных:', typeof data);
+        console.log('📦 [GET RESPONSE] Является массивом:', Array.isArray(data));
+        console.log('📦 [GET RESPONSE] Полные данные:', JSON.stringify(data, null, 2));
+
+        if (Array.isArray(data)) {
+          console.log('✅ [GET RESPONSE] Данные - массив POI');
+          return data;
+        } else if (data && typeof data === 'object') {
+          // Проверяем поля с результатами
+          if (data.results && Array.isArray(data.results)) {
+            console.log('✅ [GET RESPONSE] Найден массив в поле "results"');
+            return data.results;
+          }
+          if (data.data && Array.isArray(data.data)) {
+            console.log('✅ [GET RESPONSE] Найден массив в поле "data"');
+            return data.data;
+          }
+          if (data.pois && Array.isArray(data.pois)) {
+            console.log('✅ [GET RESPONSE] Найден массив в поле "pois"');
+            return data.pois;
+          }
+        }
+      }
+
+      console.log('⚠️ [GET RESPONSE] Не удалось получить результаты');
+      return [];
+    } catch (error) {
+      console.error('❌ [GET ERROR] Ошибка при GET запросе:', error);
+      return [];
+    }
+  };
+
+  // Функция для запроса к n8n API
+  const fetchRecommendationsFromAPI = async (chatInput: string): Promise<APIResponsePOI[]> => {
+    const requestBody = {
+      chatInput: chatInput,
+      sessionId: sessionId
+    };
+
+    // Используем прокси через Vite dev server для обхода CORS
+    const apiUrl = import.meta.env.DEV 
+      ? '/api/n8n'  // Прокси через Vite dev server
+      : 'https://nshadiyar.app.n8n.cloud/webhook/chat';  // Прямой запрос в продакшене
+
+    console.log('🚀 [API REQUEST] Отправка POST запроса к n8n API');
+    console.log('📍 URL:', apiUrl);
+    console.log('🌐 Режим:', import.meta.env.DEV ? 'Development (через прокси)' : 'Production (прямой запрос)');
+    console.log('📤 Request Body:', JSON.stringify(requestBody, null, 2));
+    console.log('🆔 Session ID:', sessionId);
+    console.log('💬 Chat Input:', chatInput);
+
+    try {
+      const startTime = Date.now();
+      
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+
+      console.log('⏱️ [API RESPONSE] Время ответа:', `${duration}ms`);
+      console.log('📊 [API RESPONSE] HTTP Status:', response.status, response.statusText);
+      console.log('📋 [API RESPONSE] Headers:', Object.fromEntries(response.headers.entries()));
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ [API ERROR] HTTP error!', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText
+        });
+        throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
+      }
+
+      // Проверяем Content-Type
+      const contentType = response.headers.get('content-type');
+      console.log('📄 [API RESPONSE] Content-Type:', contentType);
+
+      let data: any;
+      
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+        console.log('✅ [API RESPONSE] JSON данные получены');
+        console.log('📦 [API RESPONSE] Тип данных:', typeof data);
+        console.log('📦 [API RESPONSE] Является массивом:', Array.isArray(data));
+        console.log('📦 [API RESPONSE] Количество элементов:', Array.isArray(data) ? data.length : 'N/A');
+        console.log('📦 [API RESPONSE] Полные данные:', JSON.stringify(data, null, 2));
+      } else {
+        const textData = await response.text();
+        console.log('⚠️ [API RESPONSE] Не JSON ответ, получен текст:');
+        console.log('📝 [API RESPONSE] Текст ответа:', textData);
+        
+        // Пытаемся распарсить как JSON
+        try {
+          data = JSON.parse(textData);
+          console.log('✅ [API RESPONSE] Успешно распарсен как JSON');
+        } catch (parseError) {
+          console.error('❌ [API ERROR] Не удалось распарсить ответ как JSON:', parseError);
+          console.log('📝 [API RESPONSE] Сырой текст:', textData);
+          return [];
+        }
+      }
+
+      // Проверяем структуру данных
+      if (Array.isArray(data)) {
+        console.log('✅ [API RESPONSE] Данные - массив POI');
+        if (data.length > 0) {
+          console.log('📋 [API RESPONSE] Первый элемент:', JSON.stringify(data[0], null, 2));
+        }
+        return data;
+      } else if (data && typeof data === 'object') {
+        console.log('⚠️ [API RESPONSE] Данные - объект, не массив');
+        console.log('📋 [API RESPONSE] Ключи объекта:', Object.keys(data));
+        
+        // Если workflow запущен асинхронно, пытаемся получить результаты через GET
+        if (data.message && data.message.includes('Workflow was started')) {
+          console.log('🔄 [API] Workflow запущен асинхронно, пытаемся получить результаты...');
+          return await fetchResultsFromAPI(sessionId);
+        }
+        
+        // Проверяем, может быть данные в каком-то поле
+        if (data.results && Array.isArray(data.results)) {
+          console.log('✅ [API RESPONSE] Найден массив в поле "results"');
+          return data.results;
+        }
+        if (data.data && Array.isArray(data.data)) {
+          console.log('✅ [API RESPONSE] Найден массив в поле "data"');
+          return data.data;
+        }
+        if (data.pois && Array.isArray(data.pois)) {
+          console.log('✅ [API RESPONSE] Найден массив в поле "pois"');
+          return data.pois;
+        }
+        
+        // Если объект содержит массив напрямую
+        console.log('⚠️ [API RESPONSE] Объект не содержит массив, возвращаем пустой массив');
+        return [];
+      } else {
+        console.log('⚠️ [API RESPONSE] Неожиданный тип данных:', typeof data);
+        return [];
+      }
+    } catch (error) {
+      console.error('❌ [API ERROR] Ошибка при запросе к API:', error);
+      if (error instanceof Error) {
+        console.error('❌ [API ERROR] Сообщение об ошибке:', error.message);
+        console.error('❌ [API ERROR] Stack trace:', error.stack);
+      }
+      // В случае ошибки возвращаем пустой массив
+      return [];
+    }
+  };
+
+  // Преобразование API ответа в формат Recommendation
+  const convertAPIToRecommendation = (apiPOI: APIResponsePOI, userLoc: { lat: number; lng: number }): Recommendation => {
+    console.log('🔄 [CONVERT] Преобразование API POI в Recommendation');
+    console.log('📋 [CONVERT] Входные данные API POI:', JSON.stringify(apiPOI, null, 2));
+    
+    // Используем координаты из API или центр Астаны
+    const poiLat = apiPOI.latitude || 51.1694;
+    const poiLng = apiPOI.longitude || 71.4491;
+    
+    console.log('📍 [CONVERT] Координаты POI:', { lat: poiLat, lng: poiLng });
+    console.log('📍 [CONVERT] Координаты пользователя:', userLoc);
+
+    const distance = calculateDistance(userLoc.lat, userLoc.lng, poiLat, poiLng);
+    const walkingTime = calculateWalkingTime(distance);
+    
+    console.log('📏 [CONVERT] Расстояние:', distance, 'м');
+    console.log('⏱️ [CONVERT] Время ходьбы:', walkingTime, 'мин');
+
+    // Преобразуем API данные в формат POI
+    const poi = {
+      id: `api_${apiPOI.name}_${Date.now()}`,
+      name: apiPOI.name,
+      category: apiPOI.category || apiPOI.subcategory || 'Место',
+      description: apiPOI.why || `Интересное место в ${apiPOI.city || 'Астане'}`,
+      address: apiPOI.address || '',
+      coordinates: { lat: poiLat, lng: poiLng },
+      rating: undefined,
+      workingHours: apiPOI.working_hours || '',
+      tags: [
+        apiPOI.category?.toLowerCase() || '',
+        apiPOI.subcategory?.toLowerCase() || '',
+        ...(apiPOI.why?.toLowerCase().includes('тих') ? ['тихое'] : []),
+        ...(apiPOI.why?.toLowerCase().includes('дет') ? ['дети'] : []),
+        ...(apiPOI.why?.toLowerCase().includes('кафе') ? ['кафе'] : [])
+      ].filter(Boolean)
+    };
+
+    const recommendation = {
+      poi,
+      distance: Math.round(distance),
+      walkingTime,
+      score: 100, // Высокий приоритет для API результатов
+      why: apiPOI.why || 'Рекомендовано AI',
+      plan: generatePlanText(poi, searchQuery || {
+        location: 'Current location',
+        preferences: '',
+        timeAvailable: '1 hour',
+        withChildren: false,
+        specialRequirements: ''
+      }),
+      estimatedDuration: 45
+    };
+
+    console.log('📦 [CONVERT] Преобразованный POI:', {
+      id: poi.id,
+      name: poi.name,
+      category: poi.category,
+      address: poi.address,
+      tags: poi.tags
+    });
+
+    console.log('✅ [CONVERT] Финальный Recommendation:', {
+      name: recommendation.poi.name,
+      distance: recommendation.distance,
+      walkingTime: recommendation.walkingTime,
+      why: recommendation.why,
+      plan: recommendation.plan
+    });
+
+    return recommendation;
+  };
+
   // Navigation functions
   const navigateToPage = (page: PageType, poi?: any) => {
     setCurrentPage(page);
@@ -186,20 +547,76 @@ function App() {
   };
 
   const handleSearchSubmit = async (query: UserQuery) => {
+    console.log('🔍 [SEARCH] Начало поиска рекомендаций');
+    console.log('📝 [SEARCH] Query:', JSON.stringify(query, null, 2));
+    
     setIsLoading(true);
     setSearchQuery(query);
 
     // Автоматически определяем геолокацию пользователя
+    console.log('📍 [SEARCH] Определение геолокации пользователя...');
     const location = await getCurrentLocation();
     setUserLocation(location);
+    console.log('✅ [SEARCH] Геолокация определена:', location);
 
-    // Имитация поиска
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Формируем запрос для API
+    const groupLabels: { [key in GroupType]: string } = {
+      alone: 'один',
+      friends: 'с друзьями',
+      family: 'с семьёй',
+      work: 'работаю'
+    };
 
-    const results = findRecommendations(query);
+    const chatInput = `${query.preferences || 'Explore nearby'}. ${groupLabels[selectedGroup]}. ${query.location || 'Current location'}`;
+
+    console.log('🔍 [SEARCH] Chat Input:', chatInput);
+    console.log('👥 [SEARCH] Выбранная группа:', selectedGroup);
+    console.log('📍 [SEARCH] Локация пользователя:', location);
+
+    // Запрос к n8n API
+    console.log('🌐 [SEARCH] Отправка запроса к n8n API...');
+    const apiResults = await fetchRecommendationsFromAPI(chatInput);
+
+    console.log('📊 [SEARCH] Результаты от API:', {
+      count: apiResults.length,
+      isEmpty: apiResults.length === 0,
+      firstItem: apiResults.length > 0 ? apiResults[0] : null
+    });
+
+    let results: Recommendation[] = [];
+
+    if (apiResults.length > 0) {
+      console.log('✅ [SEARCH] Используем результаты из API');
+      // Используем результаты из API
+      results = apiResults.map((apiPOI, index) => {
+        console.log(`🔄 [SEARCH] Преобразование POI ${index + 1}:`, apiPOI.name);
+        const recommendation = convertAPIToRecommendation(apiPOI, location);
+        console.log(`✅ [SEARCH] Преобразовано в Recommendation:`, {
+          name: recommendation.poi.name,
+          distance: recommendation.distance,
+          walkingTime: recommendation.walkingTime,
+          why: recommendation.why
+        });
+        return recommendation;
+      });
+      console.log('✅ [SEARCH] Всего преобразовано рекомендаций:', results.length);
+    } else {
+      console.log('⚠️ [SEARCH] API не вернул результатов, используем локальные рекомендации');
+      // Fallback на локальные рекомендации, если API не вернул результатов
+      results = findRecommendations(query, selectedGroup);
+      console.log('📊 [SEARCH] Локальные рекомендации:', results.length);
+    }
+
+    console.log('🎯 [SEARCH] Финальные результаты:', {
+      total: results.length,
+      items: results.map(r => ({ name: r.poi.name, distance: r.distance, why: r.why }))
+    });
+
     setRecommendations(results);
     setCurrentPage('results');
     setIsLoading(false);
+    
+    console.log('✅ [SEARCH] Поиск завершен, переход на страницу результатов');
   };
 
   const handlePOISelect = (poi: any) => {
@@ -245,6 +662,8 @@ function App() {
             onSearch={handleSearchSubmit}
             isLoading={isLoading}
             onNavigate={(page: string) => navigateToPage(page as PageType)}
+            selectedGroup={selectedGroup}
+            onGroupChange={setSelectedGroup}
           />
         );
       case 'results':
@@ -256,6 +675,48 @@ function App() {
             onAddToRoute={handleAddToRoute}
             onStartRoute={handleStartRoute}
             searchQuery={searchQuery}
+            selectedGroup={selectedGroup}
+            onGroupChange={setSelectedGroup}
+            onRefetch={async () => {
+              console.log('🔄 [REFETCH] Пересчет рекомендаций');
+              if (searchQuery && userLocation) {
+                console.log('✅ [REFETCH] Есть searchQuery и userLocation');
+                setIsLoading(true);
+                
+                const groupLabels: { [key in GroupType]: string } = {
+                  alone: 'один',
+                  friends: 'с друзьями',
+                  family: 'с семьёй',
+                  work: 'работаю'
+                };
+
+                const chatInput = `${searchQuery.preferences || 'Explore nearby'}. ${groupLabels[selectedGroup]}. ${searchQuery.location || 'Current location'}`;
+
+                console.log('🔄 [REFETCH] Chat Input:', chatInput);
+                console.log('🔄 [REFETCH] Выбранная группа:', selectedGroup);
+
+                const apiResults = await fetchRecommendationsFromAPI(chatInput);
+
+                console.log('🔄 [REFETCH] Результаты от API:', apiResults.length);
+
+                if (apiResults.length > 0) {
+                  console.log('✅ [REFETCH] Используем результаты из API');
+                  const results = apiResults.map(apiPOI => convertAPIToRecommendation(apiPOI, userLocation));
+                  setRecommendations(results);
+                  console.log('✅ [REFETCH] Обновлено рекомендаций:', results.length);
+                } else {
+                  console.log('⚠️ [REFETCH] API не вернул результатов, используем локальные');
+                  const results = findRecommendations(searchQuery, selectedGroup);
+                  setRecommendations(results);
+                  console.log('✅ [REFETCH] Обновлено локальных рекомендаций:', results.length);
+                }
+                
+                setIsLoading(false);
+                console.log('✅ [REFETCH] Пересчет завершен');
+              } else {
+                console.log('⚠️ [REFETCH] Нет searchQuery или userLocation');
+              }
+            }}
           />
         );
       case 'poi-detail':
@@ -279,6 +740,8 @@ function App() {
             onSearch={handleSearchSubmit}
             isLoading={isLoading}
             onNavigate={(page: string) => navigateToPage(page as PageType)}
+            selectedGroup={selectedGroup}
+            onGroupChange={setSelectedGroup}
           />
         );
     }

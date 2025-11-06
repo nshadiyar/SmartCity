@@ -1,6 +1,7 @@
 import React from 'react';
 import { Recommendation, UserQuery } from '../types';
 import Map from '../components/Map';
+import GroupFilter, { GroupType } from '../components/GroupFilter';
 
 interface ResultsPageProps {
   recommendations: Recommendation[];
@@ -9,6 +10,9 @@ interface ResultsPageProps {
   onAddToRoute: (poi: any) => void;
   onStartRoute: () => void;
   searchQuery: UserQuery | null;
+  selectedGroup: GroupType;
+  onGroupChange: (group: GroupType) => void;
+  onRefetch: () => void;
 }
 
 const ResultsPage: React.FC<ResultsPageProps> = ({
@@ -17,8 +21,18 @@ const ResultsPage: React.FC<ResultsPageProps> = ({
   onPOISelect,
   onAddToRoute,
   onStartRoute,
-  searchQuery
+  searchQuery,
+  selectedGroup,
+  onGroupChange,
+  onRefetch
 }) => {
+  const handleGroupChange = (group: GroupType) => {
+    onGroupChange(group);
+    // Пересчитываем рекомендации при изменении группы
+    setTimeout(() => {
+      onRefetch();
+    }, 100);
+  };
   const getCategoryIcon = (category: string) => {
     const icons: { [key: string]: string } = {
       'Кафе': '☕',
@@ -58,6 +72,14 @@ const ResultsPage: React.FC<ResultsPageProps> = ({
             Based on: {searchQuery.preferences} • Near: {searchQuery.location}
           </p>
         )}
+      </div>
+
+      {/* Group Filter */}
+      <div className="results-group-filter">
+        <GroupFilter
+          selectedGroup={selectedGroup}
+          onGroupChange={handleGroupChange}
+        />
       </div>
 
       <div className="results-content">
@@ -114,7 +136,7 @@ const ResultsPage: React.FC<ResultsPageProps> = ({
 
                   <div className="poi-tags">
                     <span className="why-tag">
-                      {whyLabels[getWhyRecommended(rec.poi) as keyof typeof whyLabels]}
+                      {rec.why || whyLabels[getWhyRecommended(rec.poi) as keyof typeof whyLabels]}
                     </span>
                   </div>
                 </div>
