@@ -25,6 +25,7 @@ export interface UserQuery {
   withChildren?: boolean;
   budget?: string;
   specialRequirements?: string;
+  singleResult?: boolean; // Флаг для получения только одного лучшего результата
 }
 
 // Типы для рекомендаций

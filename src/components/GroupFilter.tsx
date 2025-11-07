@@ -9,15 +9,15 @@ interface GroupFilterProps {
 
 const GroupFilter: React.FC<GroupFilterProps> = ({ selectedGroup, onGroupChange }) => {
   const groups = [
-    { id: 'alone' as GroupType, icon: '👤', label: 'Один', description: 'Тихие места' },
-    { id: 'friends' as GroupType, icon: '👥', label: 'С друзьями', description: 'Кафе, активности' },
-    { id: 'family' as GroupType, icon: '👪', label: 'С семьёй', description: 'Парки, музеи' },
-    { id: 'work' as GroupType, icon: '🧑‍💻', label: 'Работаю', description: 'Коворкинги, кафе' }
+    { id: 'alone' as GroupType, icon: '👤', label: 'Alone', description: 'Quiet places' },
+    { id: 'friends' as GroupType, icon: '👥', label: 'With Friends', description: 'Cafes, activities' },
+    { id: 'family' as GroupType, icon: '👪', label: 'With Family', description: 'Parks, museums' },
+    { id: 'work' as GroupType, icon: '🧑‍💻', label: 'Working', description: 'Coworking, cafes' }
   ];
 
   return (
     <div className="group-filter">
-      <h3 className="group-filter-title">Иду не один</h3>
+      <h3 className="group-filter-title">I'm not alone</h3>
       <div className="group-options">
         {groups.map((group) => (
           <button

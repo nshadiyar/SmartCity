@@ -175,7 +175,8 @@ const TimeWeatherPage: React.FC<TimeWeatherPageProps> = ({
       preferences: queryText,
       timeAvailable: '1-2 hours',
       withChildren: false,
-      specialRequirements: allKeywords.join(', ')
+      specialRequirements: allKeywords.join(', '),
+      singleResult: true // Флаг для получения только одного результата
     };
   };
 
@@ -196,10 +197,10 @@ const TimeWeatherPage: React.FC<TimeWeatherPageProps> = ({
             <h1>{currentTheme.title}</h1>
             <p>{currentTheme.description}</p>
             <div className="current-time">
-              {currentTime.toLocaleTimeString('ru-RU', {
+              {currentTime.toLocaleTimeString('en-US', {
                 hour: '2-digit',
                 minute: '2-digit',
-                hour12: false
+                hour12: true
               })}
             </div>
           </div>
@@ -234,7 +235,7 @@ const TimeWeatherPage: React.FC<TimeWeatherPageProps> = ({
       {/* Smart Recommendations */}
       <div className="smart-recommendations">
         <h2>Perfect for Right Now</h2>
-        <p>AI-powered suggestions based on current time and weather</p>
+        <p>AI will find the perfect place for this exact moment in time and weather</p>
 
         <div className="recommendation-themes">
           <div className="theme-card" style={{ borderColor: currentTheme.accent }}>
@@ -267,11 +268,11 @@ const TimeWeatherPage: React.FC<TimeWeatherPageProps> = ({
           {isLoading ? (
             <>
               <div className="btn-spinner"></div>
-              Finding perfect activities...
+              Finding perfect place...
             </>
           ) : (
             <>
-              🎯 Discover Perfect Activities
+              🎯 Discover Perfect Place
             </>
           )}
         </button>

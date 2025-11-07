@@ -22,31 +22,31 @@ const FiltersBar: React.FC<FiltersBarProps> = ({
   onToggle
 }) => {
   const radiusOptions = [
-    { value: 500, label: '500м' },
-    { value: 1000, label: '1км' },
-    { value: 2000, label: '2км' }
+    { value: 500, label: '500m' },
+    { value: 1000, label: '1km' },
+    { value: 2000, label: '2km' }
   ];
 
   const transportOptions = [
-    { value: 'walking', label: '🚶 Пешком', icon: '🚶' },
-    { value: 'driving', label: '🚗 На машине', icon: '🚗' }
+    { value: 'walking', label: '🚶 Walking', icon: '🚶' },
+    { value: 'driving', label: '🚗 By Car', icon: '🚗' }
   ];
 
   return (
     <div className="filters-bar">
       <button className="filters-toggle" onClick={onToggle}>
         <span className="filter-icon">⚙️</span>
-        <span>Фильтры</span>
+        <span>Filters</span>
         <span className={`arrow ${isExpanded ? 'expanded' : ''}`}>▼</span>
       </button>
 
       {isExpanded && (
         <div className="filters-content">
-          {/* Радиус */}
+          {/* Radius */}
           <div className="filter-group">
             <label className="filter-label">
               <span className="filter-icon">📏</span>
-              Радиус поиска:
+              Search radius:
             </label>
             <div className="radius-options">
               {radiusOptions.map(option => (
@@ -61,11 +61,11 @@ const FiltersBar: React.FC<FiltersBarProps> = ({
             </div>
           </div>
 
-          {/* Транспорт */}
+          {/* Transport */}
           <div className="filter-group">
             <label className="filter-label">
               <span className="filter-icon">🚗</span>
-              Способ передвижения:
+              Transportation:
             </label>
             <div className="transport-options">
               {transportOptions.map(option => (
@@ -80,9 +80,9 @@ const FiltersBar: React.FC<FiltersBarProps> = ({
             </div>
           </div>
 
-          {/* Специальные фильтры */}
+          {/* Special filters */}
           <div className="filter-group">
-            <label className="filter-label">Особые требования:</label>
+            <label className="filter-label">Special requirements:</label>
             <div className="special-filters">
               <label className="checkbox-label">
                 <input
@@ -91,7 +91,7 @@ const FiltersBar: React.FC<FiltersBarProps> = ({
                   onChange={(e) => onFiltersChange({ accessibility: e.target.checked })}
                 />
                 <span className="checkmark">♿</span>
-                Доступность (пандусы)
+                Accessibility (ramps)
               </label>
 
               <label className="checkbox-label">
@@ -101,7 +101,7 @@ const FiltersBar: React.FC<FiltersBarProps> = ({
                   onChange={(e) => onFiltersChange({ kidFriendly: e.target.checked })}
                 />
                 <span className="checkmark">👶</span>
-                Подходит для детей
+                Kid-friendly
               </label>
             </div>
           </div>

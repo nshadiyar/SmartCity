@@ -1,18 +1,153 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import Map from '../components/Map';
 
 interface RouteGeneratorProps {
   pois: any[];
   onNavigate: (page: string) => void;
+  userLocation?: { lat: number; lng: number } | null;
 }
 
-const RouteGenerator: React.FC<RouteGeneratorProps> = ({ pois, onNavigate }) => {
-  const totalTime = pois.length * 45; // Rough estimate
-  const totalDistance = pois.length * 300; // Rough estimate
+// Функция для расчета расстояния между двумя точками (формула гаверсинуса)
+const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+  const R = 6371000; // Радиус Земли в метрах
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
+
+// Функция для расчета времени ходьбы (примерно 5 км/ч = 83 м/мин)
+const calculateWalkingTime = (distance: number): number => {
+  return Math.ceil(distance / 83); // 83 м/мин = 5 км/ч
+};
+
+const RouteGenerator: React.FC<RouteGeneratorProps> = ({ pois, onNavigate, userLocation }) => {
+  // Логирование входящих данных
+  useEffect(() => {
+    console.log('🗺️ [ROUTE GENERATOR] Компонент инициализирован');
+    console.log('🗺️ [ROUTE GENERATOR] Количество POI:', pois.length);
+    console.log('🗺️ [ROUTE GENERATOR] UserLocation:', userLocation);
+    pois.forEach((poi, index) => {
+      console.log(`🗺️ [ROUTE GENERATOR] POI ${index + 1}:`, {
+        name: poi?.name,
+        coordinates: poi?.coordinates,
+        hasValidCoords: poi?.coordinates && 
+          typeof poi.coordinates.lat === 'number' && 
+          typeof poi.coordinates.lng === 'number'
+      });
+    });
+  }, [pois, userLocation]);
+
+  // Рассчитываем время и расстояние для маршрута
+  const calculateRouteStats = () => {
+    if (pois.length === 0) {
+      console.warn('🗺️ [ROUTE GENERATOR] Список POI пуст');
+      return { totalTime: 0, totalDistance: 0, steps: [] };
+    }
+
+    // Фильтруем POI с валидными координатами
+    const validPOIs = pois.filter(poi => {
+      const isValid = poi && 
+        poi.coordinates && 
+        typeof poi.coordinates.lat === 'number' && 
+        typeof poi.coordinates.lng === 'number' &&
+        !isNaN(poi.coordinates.lat) &&
+        !isNaN(poi.coordinates.lng);
+      
+      if (!isValid) {
+        console.warn('🗺️ [ROUTE GENERATOR] POI с невалидными координатами:', poi?.name);
+      }
+      return isValid;
+    });
+
+    console.log('🗺️ [ROUTE GENERATOR] Валидных POI:', validPOIs.length, 'из', pois.length);
+
+    if (validPOIs.length === 0) {
+      console.warn('🗺️ [ROUTE GENERATOR] Нет POI с валидными координатами');
+      return { totalTime: 0, totalDistance: 0, steps: [] };
+    }
+
+    let totalDistance = 0;
+    let totalTime = 0;
+    const steps: Array<{ poi: any; distance: number; time: number; cumulativeTime: number }> = [];
+
+    // Начальная точка - местоположение пользователя или первое место
+    let currentLat = userLocation?.lat || validPOIs[0]?.coordinates?.lat || 51.1694;
+    let currentLng = userLocation?.lng || validPOIs[0]?.coordinates?.lng || 71.4491;
+
+    validPOIs.forEach((poi) => {
+      const distance = calculateDistance(
+        currentLat,
+        currentLng,
+        poi.coordinates.lat,
+        poi.coordinates.lng
+      );
+      const time = calculateWalkingTime(distance);
+
+      totalDistance += distance;
+      totalTime += time;
+
+      steps.push({
+        poi,
+        distance: Math.round(distance),
+        time,
+        cumulativeTime: totalTime
+      });
+
+      // Обновляем текущую позицию для следующего расчета
+      currentLat = poi.coordinates.lat;
+      currentLng = poi.coordinates.lng;
+    });
+
+    return { totalTime, totalDistance: Math.round(totalDistance), steps };
+  };
+
+  const { totalTime, totalDistance, steps } = calculateRouteStats();
 
   const handleStartJourney = () => {
     // Navigate to map with route
     onNavigate('results');
   };
+
+  // Если маршрут пустой или нет валидных POI, показываем сообщение
+  if (pois.length === 0 || steps.length === 0) {
+    return (
+      <div className="route-generator">
+        <div className="route-header">
+          <button
+            className="back-btn"
+            onClick={() => onNavigate('results')}
+          >
+            ← Back to Results
+          </button>
+          <h1>Your Walking Route</h1>
+        </div>
+        <div style={{
+          padding: '40px 20px',
+          textAlign: 'center',
+          background: 'white',
+          borderRadius: '16px',
+          margin: '20px 0'
+        }}>
+          <p style={{ fontSize: '18px', color: '#6b7280', marginBottom: '20px' }}>
+            {pois.length === 0 
+              ? 'Route is empty. Add places to your route on the results page.' 
+              : 'Failed to build route. Added places are missing coordinates.'}
+          </p>
+          <button
+            className="start-journey-btn"
+            onClick={() => onNavigate('results')}
+            style={{ marginTop: '20px' }}
+          >
+            Back to Results
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="route-generator">
@@ -29,20 +164,53 @@ const RouteGenerator: React.FC<RouteGeneratorProps> = ({ pois, onNavigate }) => 
         </p>
       </div>
 
+      {/* Карта с маршрутом */}
+      <div style={{ marginBottom: '30px' }}>
+        <Map
+          userLocation={userLocation || undefined}
+          recommendations={[]}
+          pois={[]}
+          routePOIs={pois}
+          height="500px"
+          onLocationUpdate={() => {}}
+          selectedPOI={null}
+        />
+      </div>
+      {pois.length > 0 && (
+        <div style={{
+          padding: '15px',
+          background: '#f0fdf4',
+          borderRadius: '8px',
+          marginBottom: '20px',
+          border: '1px solid #10b981'
+        }}>
+          <p style={{ margin: 0, color: '#059669', fontSize: '14px' }}>
+            💡 <strong>Tip:</strong> The route should automatically appear on the map. 
+            If the route is not visible, check the browser console (F12) for more information.
+          </p>
+        </div>
+      )}
+
       <div className="route-steps">
-        {pois.map((poi, index) => (
-          <div key={poi.id} className="route-step">
+        {steps.map((step, index) => (
+          <div key={step.poi.id || index} className="route-step">
             <div className="step-number">{index + 1}</div>
-            <div className="step-connector" style={{ display: index < pois.length - 1 ? 'block' : 'none' }}></div>
+            <div className="step-connector" style={{ display: index < steps.length - 1 ? 'block' : 'none' }}></div>
             <div className="step-content">
               <div className="step-header">
-                <h3>{poi.name}</h3>
-                <span className="step-category">{poi.category}</span>
+                <h3>{step.poi.name}</h3>
+                <span className="step-category">{step.poi.category}</span>
               </div>
-              <p className="step-description">{poi.description}</p>
+              <p className="step-description">{step.poi.description || ''}</p>
               <div className="step-meta">
-                <span>📍 {poi.address}</span>
-                <span>⏱️ ~{45 * (index + 1)} min from start</span>
+                <span>📍 {step.poi.address || 'Address not specified'}</span>
+                {index === 0 ? (
+                  <span>⏱️ ~{step.time} min from you</span>
+                ) : (
+                  <span>⏱️ ~{step.time} min from previous place</span>
+                )}
+                <span>📏 {step.distance}m</span>
+                <span>⏰ ~{step.cumulativeTime} min from start</span>
               </div>
             </div>
           </div>

@@ -47,7 +47,9 @@ function App() {
   const [sessionId] = useState<string>(() => generateSessionId());
   const [currentPage, setCurrentPage] = useState<PageType>('landing');
   const [selectedPOI, setSelectedPOI] = useState<any>(null);
+  const [selectedRecommendation, setSelectedRecommendation] = useState<Recommendation | null>(null);
   const [routePOIs, setRoutePOIs] = useState<any[]>([]);
+  const [previousPage, setPreviousPage] = useState<PageType>('landing'); // Для отслеживания предыдущей страницы
 
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -282,16 +284,22 @@ function App() {
       ? '/api/n8n'  // Прокси через Vite dev server
       : 'https://nshadiyar.app.n8n.cloud/webhook/chat';  // Прямой запрос в продакшене
 
-    console.log('🚀 [API REQUEST] Отправка POST запроса к n8n API');
-    console.log('📍 URL:', apiUrl);
-    console.log('🌐 Режим:', import.meta.env.DEV ? 'Development (через прокси)' : 'Production (прямой запрос)');
-    console.log('📤 Request Body:', JSON.stringify(requestBody, null, 2));
-    console.log('🆔 Session ID:', sessionId);
-    console.log('💬 Chat Input:', chatInput);
+    console.log('🚀 [API REQUEST] ========== ОТПРАВКА POST ЗАПРОСА К N8N API ==========');
+    console.log('📍 [API REQUEST] URL:', apiUrl);
+    console.log('📍 [API REQUEST] Финальный URL (через прокси):', import.meta.env.DEV ? 'http://localhost:5174/api/n8n → https://nshadiyar.app.n8n.cloud/webhook/chat' : 'https://nshadiyar.app.n8n.cloud/webhook/chat');
+    console.log('🌐 [API REQUEST] Режим:', import.meta.env.DEV ? 'Development (через прокси)' : 'Production (прямой запрос)');
+    console.log('📤 [API REQUEST] Request Body:', JSON.stringify(requestBody, null, 2));
+    console.log('🆔 [API REQUEST] Session ID:', sessionId);
+    console.log('💬 [API REQUEST] Chat Input:', chatInput);
+    console.log('📋 [API REQUEST] Метод:', 'POST');
+    console.log('📋 [API REQUEST] Headers:', JSON.stringify({
+      'Content-Type': 'application/json'
+    }, null, 2));
 
     try {
       const startTime = Date.now();
       
+      console.log('⏳ [API REQUEST] Отправка запроса...');
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
@@ -305,15 +313,24 @@ function App() {
 
       console.log('⏱️ [API RESPONSE] Время ответа:', `${duration}ms`);
       console.log('📊 [API RESPONSE] HTTP Status:', response.status, response.statusText);
-      console.log('📋 [API RESPONSE] Headers:', Object.fromEntries(response.headers.entries()));
+      const headersObj = Object.fromEntries(response.headers.entries());
+      console.log('📋 [API RESPONSE] Headers:', JSON.stringify(headersObj, null, 2));
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ [API ERROR] HTTP error!', {
-          status: response.status,
-          statusText: response.statusText,
-          body: errorText
-        });
+        console.error('❌ [API ERROR] HTTP error!');
+        console.error('❌ [API ERROR] Status:', response.status);
+        console.error('❌ [API ERROR] Status Text:', response.statusText);
+        console.error('❌ [API ERROR] Response Body:', errorText);
+        console.error('❌ [API ERROR] Request URL:', apiUrl);
+        console.error('❌ [API ERROR] Request Body:', JSON.stringify(requestBody, null, 2));
+        
+        // Не выбрасываем ошибку для 500, просто возвращаем пустой массив
+        if (response.status === 500) {
+          console.warn('⚠️ [API ERROR] Сервер вернул 500 ошибку. Используем fallback на локальные данные.');
+          return [];
+        }
+        
         throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
       }
 
@@ -321,37 +338,54 @@ function App() {
       const contentType = response.headers.get('content-type');
       console.log('📄 [API RESPONSE] Content-Type:', contentType);
 
+      // Читаем тело ответа как текст, чтобы безопасно обработать пустой ответ
+      const rawText = await response.text();
+      console.log('📝 [API RESPONSE] Сырой текст ответа:', rawText);
+
+      if (!rawText || rawText.trim().length === 0) {
+        console.warn('⚠️ [API RESPONSE] Пустой ответ от API');
+        return [];
+      }
+
       let data: any;
-      
-      if (contentType && contentType.includes('application/json')) {
-        data = await response.json();
+      try {
+        data = JSON.parse(rawText);
         console.log('✅ [API RESPONSE] JSON данные получены');
-        console.log('📦 [API RESPONSE] Тип данных:', typeof data);
-        console.log('📦 [API RESPONSE] Является массивом:', Array.isArray(data));
-        console.log('📦 [API RESPONSE] Количество элементов:', Array.isArray(data) ? data.length : 'N/A');
-        console.log('📦 [API RESPONSE] Полные данные:', JSON.stringify(data, null, 2));
-      } else {
-        const textData = await response.text();
-        console.log('⚠️ [API RESPONSE] Не JSON ответ, получен текст:');
-        console.log('📝 [API RESPONSE] Текст ответа:', textData);
-        
-        // Пытаемся распарсить как JSON
-        try {
-          data = JSON.parse(textData);
-          console.log('✅ [API RESPONSE] Успешно распарсен как JSON');
-        } catch (parseError) {
-          console.error('❌ [API ERROR] Не удалось распарсить ответ как JSON:', parseError);
-          console.log('📝 [API RESPONSE] Сырой текст:', textData);
-          return [];
-        }
+      } catch (parseError) {
+        console.error('❌ [API ERROR] Не удалось распарсить ответ как JSON:', parseError);
+        console.log('📝 [API RESPONSE] Сырой текст:', rawText);
+        return [];
+      }
+
+      console.log('📦 [API RESPONSE] Тип данных:', typeof data);
+      console.log('📦 [API RESPONSE] Является массивом:', Array.isArray(data));
+      if (Array.isArray(data)) {
+        console.log('📦 [API RESPONSE] Количество элементов:', data.length);
       }
 
       // Проверяем структуру данных - API возвращает массив POI напрямую
       if (Array.isArray(data)) {
-        console.log('✅ [API RESPONSE] Данные - массив POI');
+        console.log('✅ [API RESPONSE] ✅✅✅ ДАННЫЕ - МАССИВ POI ✅✅✅');
         console.log('📊 [API RESPONSE] Количество POI:', data.length);
         if (data.length > 0) {
-          console.log('📋 [API RESPONSE] Первый элемент:', JSON.stringify(data[0], null, 2));
+          console.log('📋 [API RESPONSE] ✅✅✅ ПОЛУЧЕНЫ ДАННЫЕ ИЗ API ✅✅✅');
+          console.log('📋 [API RESPONSE] Полные данные всех POI:');
+          data.forEach((poi, index) => {
+            console.log(`📍 [API RESPONSE] POI ${index + 1}:`, JSON.stringify(poi, null, 2));
+          });
+          console.log('📋 [API RESPONSE] Первый элемент (детально):', JSON.stringify({
+            name: data[0].name,
+            latitude: data[0].latitude,
+            longitude: data[0].longitude,
+            address: data[0].address,
+            category: data[0].category,
+            why: data[0].why,
+            phone: data[0].phone,
+            working_hours: data[0].working_hours
+          }, null, 2));
+          console.log('✅ [API RESPONSE] ✅✅✅ ВОЗВРАЩАЕМ ДАННЫЕ ИЗ API ✅✅✅');
+        } else {
+          console.warn('⚠️ [API RESPONSE] Массив пустой!');
         }
         return data as APIResponsePOI[];
       } else if (data && typeof data === 'object') {
@@ -497,81 +531,162 @@ function App() {
     console.log('📍 [SEARCH] Определение геолокации пользователя...');
     const location = await getCurrentLocation();
     setUserLocation(location);
-    console.log('✅ [SEARCH] Геолокация определена:', location);
+    console.log('✅ [SEARCH] Геолокация определена:', JSON.stringify(location, null, 2));
 
-    // Формируем запрос для API
+    // Form API request
     const groupLabels: { [key in GroupType]: string } = {
-      alone: 'один',
-      friends: 'с друзьями',
-      family: 'с семьёй',
-      work: 'работаю'
+      alone: 'alone',
+      friends: 'with friends',
+      family: 'with family',
+      work: 'working'
     };
 
     const chatInput = `${query.preferences || 'Explore nearby'}. ${groupLabels[selectedGroup]}. ${query.location || 'Current location'}`;
 
     console.log('🔍 [SEARCH] Chat Input:', chatInput);
     console.log('👥 [SEARCH] Выбранная группа:', selectedGroup);
-    console.log('📍 [SEARCH] Локация пользователя:', location);
+    console.log('📍 [SEARCH] Локация пользователя:', JSON.stringify(location, null, 2));
 
     // Запрос к n8n API
     console.log('🌐 [SEARCH] Отправка запроса к n8n API...');
     const apiResults = await fetchRecommendationsFromAPI(chatInput);
 
-    console.log('📊 [SEARCH] Результаты от API:', {
-      count: apiResults.length,
-      isEmpty: apiResults.length === 0,
-      firstItem: apiResults.length > 0 ? apiResults[0] : null
-    });
+    console.log('📊 [SEARCH] Результаты от API:');
+    console.log('  - Количество:', apiResults.length);
+    console.log('  - Пусто:', apiResults.length === 0);
+    if (apiResults.length > 0) {
+      console.log('  - Первый элемент:', JSON.stringify(apiResults[0], null, 2));
+    }
 
     let results: Recommendation[] = [];
 
     if (apiResults.length > 0) {
-      console.log('✅ [SEARCH] Используем результаты из API');
+      console.log('✅ [SEARCH] ✅✅✅ ИСПОЛЬЗУЕМ ДАННЫЕ ИЗ API ✅✅✅');
+      console.log('✅ [SEARCH] Количество POI из API:', apiResults.length);
       // Используем результаты из API
       results = apiResults.map((apiPOI, index) => {
-        console.log(`🔄 [SEARCH] Преобразование POI ${index + 1}:`, apiPOI.name);
+        console.log(`🔄 [SEARCH] Преобразование POI ${index + 1} из API:`, apiPOI.name || 'Без имени');
+        console.log(`📋 [SEARCH] Данные POI ${index + 1}:`, JSON.stringify(apiPOI, null, 2));
         const recommendation = convertAPIToRecommendation(apiPOI, location);
-        console.log(`✅ [SEARCH] Преобразовано в Recommendation:`, {
+        console.log(`✅ [SEARCH] Преобразовано в Recommendation:`, JSON.stringify({
           name: recommendation.poi.name,
           distance: recommendation.distance,
           walkingTime: recommendation.walkingTime,
-          why: recommendation.why
-        });
+          why: recommendation.why,
+          address: recommendation.poi.address,
+          coordinates: recommendation.poi.coordinates
+        }, null, 2));
         return recommendation;
       });
-      console.log('✅ [SEARCH] Всего преобразовано рекомендаций:', results.length);
+      console.log('✅ [SEARCH] ✅✅✅ ВСЕГО ПРЕОБРАЗОВАНО ИЗ API:', results.length, '✅✅✅');
     } else {
-      console.log('⚠️ [SEARCH] API не вернул результатов, используем локальные рекомендации');
+      console.log('⚠️ [SEARCH] ⚠️⚠️⚠️ API НЕ ВЕРНУЛ РЕЗУЛЬТАТОВ, ИСПОЛЬЗУЕМ ЛОКАЛЬНЫЕ ДАННЫЕ ⚠️⚠️⚠️');
       // Fallback на локальные рекомендации, если API не вернул результатов
       results = findRecommendations(query, selectedGroup);
-      console.log('📊 [SEARCH] Локальные рекомендации:', results.length);
+      console.log('📊 [SEARCH] Локальные рекомендации (FALLBACK):', results.length);
     }
 
-    console.log('🎯 [SEARCH] Финальные результаты:', {
-      total: results.length,
-      items: results.map(r => ({ name: r.poi.name, distance: r.distance, why: r.why }))
+    console.log('🎯 [SEARCH] Финальные результаты:');
+    console.log('  - Всего результатов:', results.length);
+    console.log('  - Список результатов:', JSON.stringify(results.map(r => ({ 
+      name: r.poi.name, 
+      distance: r.distance, 
+      why: r.why,
+      address: r.poi.address,
+      coordinates: r.poi.coordinates,
+      category: r.poi.category,
+      phone: r.poi.phone,
+      workingHours: r.poi.workingHours
+    })), null, 2));
+
+    console.log('📊 [SEARCH] Детальная информация о результатах:');
+    results.forEach((result, index) => {
+      console.log(`📌 [SEARCH] Результат ${index + 1}:`, JSON.stringify({
+        id: result.poi.id,
+        name: result.poi.name,
+        category: result.poi.category,
+        address: result.poi.address,
+        coordinates: result.poi.coordinates,
+        distance: result.distance,
+        walkingTime: result.walkingTime,
+        why: result.why,
+        phone: result.poi.phone,
+        website: result.poi.website,
+        workingHours: result.poi.workingHours
+      }, null, 2));
     });
 
-    setRecommendations(results);
-    setCurrentPage('results');
-    setIsLoading(false);
-    
-    console.log('✅ [SEARCH] Поиск завершен, переход на страницу результатов');
+    // If single result is required (for TimeWeatherPage)
+    if (query.singleResult) {
+      if (results.length > 0) {
+        console.log('🎯 [SEARCH] singleResult mode: selecting best place');
+        const bestResult = results[0]; // Take the first (best) place
+        console.log('🏆 [SEARCH] Selected place:', bestResult.poi.name);
+        console.log('💡 [SEARCH] Reason for selection:', bestResult.why);
+        console.log('📋 [SEARCH] Action plan:', bestResult.plan);
+        
+        setRecommendations([bestResult]);
+        setSelectedPOI(bestResult.poi); // Set as selected POI for automatic route building
+        setSelectedRecommendation(bestResult); // Save recommendation to display why and plan
+        setPreviousPage('time-weather'); // Save that we came from time-weather
+        setCurrentPage('poi-detail'); // Navigate to detail page with automatic route
+        setIsLoading(false);
+        
+        console.log('✅ [SEARCH] Navigating to detail page with automatic route building');
+      } else {
+        console.warn('⚠️ [SEARCH] singleResult mode: no results found');
+        // If no results, show message and return to time-weather
+        setRecommendations([]);
+        setCurrentPage('time-weather');
+        setIsLoading(false);
+        alert('Unfortunately, we couldn\'t find a suitable place. Please try changing your search parameters.');
+      }
+    } else {
+      setRecommendations(results);
+      setPreviousPage('results'); // Save that we came from results
+      setCurrentPage('results');
+      setIsLoading(false);
+      
+      console.log('✅ [SEARCH] Поиск завершен, переход на страницу результатов');
+    }
   };
 
-  const handlePOISelect = (poi: any) => {
+  const handlePOISelect = (poi: any, recommendation?: Recommendation) => {
     setSelectedPOI(poi);
+    setSelectedRecommendation(recommendation || null);
+    setPreviousPage('results'); // Save that we came from results
     setCurrentPage('poi-detail');
   };
 
   const handleAddToRoute = (poi: any) => {
-    setRoutePOIs(prev => [...prev, poi]);
-    // Show toast notification
-    showToast('Добавлено в маршрут');
+    setRoutePOIs(prev => {
+      // Limit route to 3 places
+      if (prev.length >= 3) {
+        showToast('Route can contain maximum 3 places');
+        return prev;
+      }
+      // Check if this place is already added
+      if (prev.some(p => p.id === poi.id)) {
+        showToast('This place is already added to the route');
+        return prev;
+      }
+      const newRoute = [...prev, poi];
+      showToast(`Added to route (${newRoute.length}/3)`);
+      return newRoute;
+    });
   };
 
   const handleStartRoute = () => {
+    if (routePOIs.length === 0) {
+      showToast('Add places to your route');
+      return;
+    }
     setCurrentPage('route-generator');
+  };
+
+  const handleClearRoute = () => {
+    setRoutePOIs([]);
+    showToast('Route cleared');
   };
 
   const showToast = (message: string) => {
@@ -617,6 +732,8 @@ function App() {
             searchQuery={searchQuery}
             selectedGroup={selectedGroup}
             onGroupChange={setSelectedGroup}
+            routePOIs={routePOIs}
+            onClearRoute={handleClearRoute}
             onRefetch={async () => {
               console.log('🔄 [REFETCH] Пересчет рекомендаций');
               if (searchQuery && userLocation) {
@@ -640,15 +757,15 @@ function App() {
                 console.log('🔄 [REFETCH] Результаты от API:', apiResults.length);
 
                 if (apiResults.length > 0) {
-                  console.log('✅ [REFETCH] Используем результаты из API');
+                  console.log('✅ [REFETCH] ✅✅✅ ИСПОЛЬЗУЕМ ДАННЫЕ ИЗ API ✅✅✅');
                   const results = apiResults.map(apiPOI => convertAPIToRecommendation(apiPOI, userLocation));
                   setRecommendations(results);
-                  console.log('✅ [REFETCH] Обновлено рекомендаций:', results.length);
+                  console.log('✅ [REFETCH] ✅✅✅ ОБНОВЛЕНО РЕКОМЕНДАЦИЙ ИЗ API:', results.length, '✅✅✅');
                 } else {
-                  console.log('⚠️ [REFETCH] API не вернул результатов, используем локальные');
+                  console.log('⚠️ [REFETCH] ⚠️⚠️⚠️ API НЕ ВЕРНУЛ РЕЗУЛЬТАТОВ, ИСПОЛЬЗУЕМ ЛОКАЛЬНЫЕ ДАННЫЕ ⚠️⚠️⚠️');
                   const results = findRecommendations(searchQuery, selectedGroup);
                   setRecommendations(results);
-                  console.log('✅ [REFETCH] Обновлено локальных рекомендаций:', results.length);
+                  console.log('✅ [REFETCH] Обновлено локальных рекомендаций (FALLBACK):', results.length);
                 }
                 
                 setIsLoading(false);
@@ -663,8 +780,11 @@ function App() {
         return (
           <POIDetailPage
             poi={selectedPOI}
+            recommendation={selectedRecommendation}
             onNavigate={(page: string) => navigateToPage(page as PageType)}
             onAddToRoute={handleAddToRoute}
+            userLocation={userLocation}
+            previousPage={previousPage}
           />
         );
       case 'route-generator':
@@ -672,6 +792,7 @@ function App() {
           <RouteGenerator
             pois={routePOIs}
             onNavigate={(page: string) => navigateToPage(page as PageType)}
+            userLocation={userLocation}
           />
         );
       case 'time-weather':

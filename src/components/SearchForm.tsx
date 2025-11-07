@@ -28,34 +28,34 @@ const SearchForm: React.FC<SearchFormProps> = ({
         // Парсинг примера запроса для автоматического заполнения
         const example = scenario.exampleQuery;
 
-        // Извлечение локации
+        // Extract location
         if (example.includes('EXPO')) {
           setLocation('EXPO 2017');
-        } else if (example.includes('ребенком')) {
-          setLocation('Центральный парк');
+        } else if (example.includes('child') || example.includes('children')) {
+          setLocation('Central Park');
           setWithChildren(true);
-        } else if (example.includes('турист')) {
-          setLocation('Аэропорт Астаны');
+        } else if (example.includes('tourist') || example.includes('airport')) {
+          setLocation('Astana Airport');
         }
 
-        // Извлечение времени
-        if (example.includes('30–60 минут')) {
-          setTimeAvailable('30-60 минут');
-        } else if (example.includes('2 часа')) {
-          setTimeAvailable('2 часа');
-        } else if (example.includes('пару часов')) {
-          setTimeAvailable('2-3 часа');
+        // Extract time
+        if (example.includes('30–60') || example.includes('30-60')) {
+          setTimeAvailable('30-60 minutes');
+        } else if (example.includes('2 hour')) {
+          setTimeAvailable('2 hours');
+        } else if (example.includes('couple of hours')) {
+          setTimeAvailable('2-3 hours');
         }
 
-        // Извлечение предпочтений
-        if (example.includes('необычное')) {
-          setPreferences('необычное, интересное, уникальное');
-        } else if (example.includes('детские площадки')) {
-          setPreferences('дети, семья, развлечения');
-        } else if (example.includes('кофе и розеткой')) {
-          setPreferences('кофе, работа, интернет, розетки');
-        } else if (example.includes('ночную активность')) {
-          setPreferences('ночь, развлечения, музыка, коктейли');
+        // Extract preferences
+        if (example.includes('unusual') || example.includes('unique')) {
+          setPreferences('unusual, interesting, unique');
+        } else if (example.includes('children') || example.includes('kids')) {
+          setPreferences('children, family, entertainment');
+        } else if (example.includes('coffee') && example.includes('work')) {
+          setPreferences('coffee, work, internet, outlets');
+        } else if (example.includes('night') || example.includes('evening')) {
+          setPreferences('night, entertainment, music, cocktails');
         }
       }
     }
@@ -65,14 +65,14 @@ const SearchForm: React.FC<SearchFormProps> = ({
     e.preventDefault();
 
     if (!location.trim() || !preferences.trim()) {
-      alert('Пожалуйста, укажите вашу локацию и предпочтения');
+      alert('Please specify your location and preferences');
       return;
     }
 
     const query: UserQuery = {
       location: location.trim(),
       preferences: preferences.trim(),
-      timeAvailable: timeAvailable || '30-60 минут',
+      timeAvailable: timeAvailable || '30-60 minutes',
       withChildren,
       specialRequirements: specialRequirements.trim()
     };
@@ -82,47 +82,47 @@ const SearchForm: React.FC<SearchFormProps> = ({
 
   return (
     <form className="search-form" onSubmit={handleSubmit}>
-      <h2>Расскажите о себе и ваших планах</h2>
+      <h2>Tell us about yourself and your plans</h2>
 
       <div className="form-group">
-        <label htmlFor="location">Где вы сейчас находитесь?</label>
+        <label htmlFor="location">Where are you now?</label>
         <input
           type="text"
           id="location"
           value={location}
           onChange={(e) => setLocation(e.target.value)}
-          placeholder="Например: у здания EXPO 2017, в центре города, возле парка..."
+          placeholder="For example: near EXPO 2017, city center, near the park..."
           required
         />
       </div>
 
       <div className="form-group">
-        <label htmlFor="preferences">Что вы ищете?</label>
+        <label htmlFor="preferences">What are you looking for?</label>
         <textarea
           id="preferences"
           value={preferences}
           onChange={(e) => setPreferences(e.target.value)}
-          placeholder="Опишите ваши предпочтения: прогулка, кофе, дети, необычное место, работа..."
+          placeholder="Describe your preferences: walk, coffee, children, unusual place, work..."
           rows={3}
           required
         />
       </div>
 
       <div className="form-group">
-        <label htmlFor="timeAvailable">Сколько времени у вас есть?</label>
+        <label htmlFor="timeAvailable">How much time do you have?</label>
         <select
           id="timeAvailable"
           value={timeAvailable}
           onChange={(e) => setTimeAvailable(e.target.value)}
           required
         >
-          <option value="">Выберите время...</option>
-          <option value="30 минут">30 минут</option>
-          <option value="30-60 минут">30-60 минут</option>
-          <option value="1 час">1 час</option>
-          <option value="1-2 часа">1-2 часа</option>
-          <option value="2-3 часа">2-3 часа</option>
-          <option value="больше 3 часов">Больше 3 часов</option>
+          <option value="">Select time...</option>
+          <option value="30 minutes">30 minutes</option>
+          <option value="30-60 minutes">30-60 minutes</option>
+          <option value="1 hour">1 hour</option>
+          <option value="1-2 hours">1-2 hours</option>
+          <option value="2-3 hours">2-3 hours</option>
+          <option value="more than 3 hours">More than 3 hours</option>
         </select>
       </div>
 
@@ -133,18 +133,18 @@ const SearchForm: React.FC<SearchFormProps> = ({
             checked={withChildren}
             onChange={(e) => setWithChildren(e.target.checked)}
           />
-          {' '}Еду с детьми
+          {' '}Traveling with children
         </label>
       </div>
 
       <div className="form-group">
-        <label htmlFor="specialRequirements">Особые требования (опционально)</label>
+        <label htmlFor="specialRequirements">Special requirements (optional)</label>
         <input
           type="text"
           id="specialRequirements"
           value={specialRequirements}
           onChange={(e) => setSpecialRequirements(e.target.value)}
-          placeholder="Wi-Fi, розетки, доступность, бюджет..."
+          placeholder="Wi-Fi, outlets, accessibility, budget..."
         />
       </div>
 
@@ -153,7 +153,7 @@ const SearchForm: React.FC<SearchFormProps> = ({
         className="search-button"
         disabled={isLoading}
       >
-        {isLoading ? 'Ищу рекомендации...' : 'Найти подходящие места'}
+        {isLoading ? 'Searching for recommendations...' : 'Find suitable places'}
       </button>
     </form>
   );
