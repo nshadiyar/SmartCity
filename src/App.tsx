@@ -9,11 +9,12 @@ import TimeWeatherPage from './pages/TimeWeatherPage';
 import StickyHeader from './components/StickyHeader';
 import FloatingChatButton from './components/FloatingChatButton';
 import RealtimeChat from './components/RealtimeChat';
+import EventsPage from './components/EventsPage';
 import { GroupType } from './components/GroupFilter';
 import './App.css';
 
 // Page types
-type PageType = 'landing' | 'results' | 'poi-detail' | 'route-generator' | 'time-weather';
+type PageType = 'landing' | 'results' | 'poi-detail' | 'route-generator' | 'time-weather' | 'events';
 
 // API Response type
 interface APIResponsePOI {
@@ -871,6 +872,13 @@ function App() {
             userLocation={userLocation}
             selectedGroup={selectedGroup}
             onGroupChange={setSelectedGroup}
+          />
+        );
+      case 'events':
+        return (
+          <EventsPage
+            onPOISelect={(poi) => handlePOISelect(poi)}
+            onAddToRoute={handleAddToRoute}
           />
         );
       default:

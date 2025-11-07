@@ -93,7 +93,7 @@ export const mockPOIs: POI[] = [
     rating: 4.2,
     workingHours: '22:00-06:00',
     phone: '+7 (7172) 66-66-66',
-    imageUrl: 'https://example.com/club.jpg'
+    imageUrl: 'https://images.unsplash.com/photo-1572116469696-31de0f17cc34?w=800&h=600&fit=crop'
   },
   {
     id: 'museum-future',
@@ -133,6 +133,103 @@ export const mockPOIs: POI[] = [
     rating: 4.0,
     workingHours: '6:00-22:00',
     imageUrl: 'https://example.com/playground.jpg'
+  },
+  {
+    id: 'concert-hall-astana',
+    name: 'Концертный зал "Астана"',
+    description: 'Современный концертный зал с отличной акустикой. Регулярные концерты казахстанских и зарубежных артистов, классическая и современная музыка.',
+    category: 'развлечения',
+    coordinates: { lat: 51.1290, lng: 71.4280 },
+    address: 'пр. Тауелсиздик, 57',
+    tags: ['концерт', 'музыка', 'культура', 'вечер', 'развлечения'],
+    rating: 4.7,
+    workingHours: '10:00-22:00',
+    phone: '+7 (7172) 77-11-11',
+    website: 'https://concert-hall-astana.kz',
+    imageUrl: 'https://astana-piramida.kz/img/services/178f32b66d35accadef24de73802b4e8.jpg'
+  },
+  {
+    id: 'standup-comedy-club',
+    name: 'Stand-Up Comedy Club "Смех"',
+    description: 'Единственный в Астане stand-up комедийный клуб. Вечера стендапа каждый четверг, пятницу и субботу. Веселая атмосфера и отличные комики.',
+    category: 'развлечения',
+    coordinates: { lat: 51.1310, lng: 71.4220 },
+    address: 'ул. Достык, 12',
+    tags: ['stand-up', 'комедия', 'юмор', 'вечер', 'развлечения', 'смех'],
+    rating: 4.6,
+    workingHours: '19:00-01:00',
+    phone: '+7 (7172) 88-22-22',
+    website: 'https://standup-astana.kz',
+    imageUrl: 'https://sxodim.com/uploads/posts/2023/05/07/optimized/75052a214004c218ef1d61b0d3598134_545x305-q-85.jpg'
+  },
+  {
+    id: 'jazz-club-blue-note',
+    name: 'Jazz Club "Blue Note"',
+    description: 'Уютный джаз-клуб в центре города. Живые выступления джазовых музыкантов каждый вечер. Романтическая атмосфера, отличные коктейли.',
+    category: 'развлечения',
+    coordinates: { lat: 51.1280, lng: 71.4240 },
+    address: 'ул. Сейфуллина, 20',
+    tags: ['джаз', 'музыка', 'концерт', 'вечер', 'романтика', 'коктейли'],
+    rating: 4.8,
+    workingHours: '18:00-02:00',
+    phone: '+7 (7172) 99-33-33',
+    website: 'https://bluenote-astana.kz',
+    imageUrl: 'https://s3-eu-central-1.amazonaws.com/jazzpeople/wp-content/uploads/2015/10/12081400/Blue-Note1-696x464.jpg'
+  },
+  {
+    id: 'rock-concert-venue',
+    name: 'Рок-клуб "Металл"',
+    description: 'Легендарное место для рок-концертов. Регулярные выступления местных и зарубежных рок-групп. Живая энергия и отличная атмосфера.',
+    category: 'развлечения',
+    coordinates: { lat: 51.1320, lng: 71.4200 },
+    address: 'ул. Абылай хана, 25',
+    tags: ['рок', 'концерт', 'музыка', 'ночь', 'развлечения', 'энергия'],
+    rating: 4.5,
+    workingHours: '20:00-03:00',
+    phone: '+7 (7172) 66-44-44',
+    website: 'https://rock-metal-astana.kz',
+    imageUrl: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&h=600&fit=crop'
+  },
+  {
+    id: 'comedy-theater',
+    name: 'Театр комедии "Сатира"',
+    description: 'Театр комедийных постановок и скетч-шоу. Веселые спектакли и юмористические вечера. Отличное место для хорошего настроения.',
+    category: 'развлечения',
+    coordinates: { lat: 51.1270, lng: 71.4290 },
+    address: 'пр. Абая, 35',
+    tags: ['театр', 'комедия', 'юмор', 'спектакль', 'вечер', 'культура'],
+    rating: 4.4,
+    workingHours: '12:00-22:00',
+    phone: '+7 (7172) 55-66-77',
+    website: 'https://satira-theater.kz',
+    imageUrl: 'https://m.ticketon.kz/files/images/40973635_486447285157664_8464608996785913856_o-745x495.jpg'
+  },
+  {
+    id: 'open-air-concert',
+    name: 'Летняя площадка "Музыка под звездами"',
+    description: 'Открытая концертная площадка в парке. Летние концерты под открытым небом, фестивали и музыкальные вечера. Уникальная атмосфера.',
+    category: 'развлечения',
+    coordinates: { lat: 51.1680, lng: 71.4180 },
+    address: 'Центральный парк, главная сцена',
+    tags: ['концерт', 'open-air', 'музыка', 'лето', 'фестиваль', 'природа'],
+    rating: 4.6,
+    workingHours: '18:00-23:00 (май-сентябрь)',
+    phone: '+7 (7172) 44-55-66',
+    imageUrl: 'https://s3.afisha.ru/mediastorage/cf/80/211a2f490cda4b3d9c63218980cf.jpg'
+  },
+  {
+    id: 'comedy-night-bar',
+    name: 'Бар "Смешные истории"',
+    description: 'Уютный бар с вечерами стендапа и комедийными шоу. Отличные напитки, закуски и море смеха. Идеально для вечернего отдыха с друзьями.',
+    category: 'развлечения',
+    coordinates: { lat: 51.1305, lng: 71.4215 },
+    address: 'ул. Кенесары, 18',
+    tags: ['stand-up', 'комедия', 'бар', 'вечер', 'друзья', 'смех', 'развлечения'],
+    rating: 4.5,
+    workingHours: '17:00-02:00',
+    phone: '+7 (7172) 33-44-55',
+    website: 'https://funny-stories-bar.kz',
+    imageUrl: 'https://avatars.mds.yandex.net/get-vertis-journal/4212087/7348d9e8-5459-4886-9ed1-c32e971656c0.png/1600x1600'
   }
 ];
 

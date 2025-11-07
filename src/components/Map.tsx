@@ -776,38 +776,17 @@ const Map: React.FC<MapProps> = ({
 
     isBuildingRouteRef.current = true;
 
-    // Фильтруем POI с валидными координатами и нормализуем их
+    // Фильтруем POI с валидными координатами
     const validPOIs = routePOIs.filter(poi => {
-      if (!poi || !poi.coordinates) {
-        console.warn('🗺️ [MAP] POI без объекта coordinates:', poi?.name || 'Unknown');
-        return false;
-      }
+      const hasValidCoords = poi && 
+        poi.coordinates && 
+        typeof poi.coordinates.lat === 'number' && 
+        typeof poi.coordinates.lng === 'number' &&
+        !isNaN(poi.coordinates.lat) &&
+        !isNaN(poi.coordinates.lng);
       
-      // Пытаемся получить координаты, поддерживая строки и числа
-      const latValue = poi.coordinates.lat;
-      const lngValue = poi.coordinates.lng;
-      const latNum = latValue !== null && latValue !== undefined ? Number(latValue) : NaN;
-      const lngNum = lngValue !== null && lngValue !== undefined ? Number(lngValue) : NaN;
-      
-      const hasValidCoords = !isNaN(latNum) && !isNaN(lngNum) && 
-        latNum >= -90 && latNum <= 90 && 
-        lngNum >= -180 && lngNum <= 180;
-      
-      if (hasValidCoords) {
-        // Нормализуем координаты в числа
-        poi.coordinates.lat = latNum;
-        poi.coordinates.lng = lngNum;
-      } else {
-        console.warn('🗺️ [MAP] POI без валидных координат:', {
-          name: poi?.name || 'Unknown',
-          coordinates: poi.coordinates,
-          latValue,
-          lngValue,
-          latNum,
-          lngNum,
-          latType: typeof latValue,
-          lngType: typeof lngValue
-        });
+      if (!hasValidCoords) {
+        console.warn('🗺️ [MAP] POI без валидных координат:', poi?.name || 'Unknown');
       }
       return hasValidCoords;
     });
