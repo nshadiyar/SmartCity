@@ -30,14 +30,44 @@ const RouteGenerator: React.FC<RouteGeneratorProps> = ({ pois, onNavigate, userL
     console.log('🗺️ [ROUTE GENERATOR] Компонент инициализирован');
     console.log('🗺️ [ROUTE GENERATOR] Количество POI:', pois.length);
     console.log('🗺️ [ROUTE GENERATOR] UserLocation:', userLocation);
+    console.log('🗺️ [ROUTE GENERATOR] Full POIs data:', JSON.stringify(pois, null, 2));
     pois.forEach((poi, index) => {
+      // Более детальная проверка координат
+      const coords = poi?.coordinates;
+      const latValue = coords?.lat;
+      const lngValue = coords?.lng;
+      
+      // Пытаемся преобразовать в числа, если они строки
+      const latNum = latValue !== null && latValue !== undefined ? Number(latValue) : NaN;
+      const lngNum = lngValue !== null && lngValue !== undefined ? Number(lngValue) : NaN;
+      
+      const hasValidCoords = !isNaN(latNum) && !isNaN(lngNum) && 
+        latNum >= -90 && latNum <= 90 && 
+        lngNum >= -180 && lngNum <= 180;
+      
       console.log(`🗺️ [ROUTE GENERATOR] POI ${index + 1}:`, {
+        id: poi?.id,
         name: poi?.name,
-        coordinates: poi?.coordinates,
-        hasValidCoords: poi?.coordinates && 
-          typeof poi.coordinates.lat === 'number' && 
-          typeof poi.coordinates.lng === 'number'
+        coordinates: coords,
+        latValue: latValue,
+        lngValue: lngValue,
+        latType: typeof latValue,
+        lngType: typeof lngValue,
+        latNum: latNum,
+        lngNum: lngNum,
+        hasValidCoords,
+        fullPoi: poi
       });
+      
+      if (!hasValidCoords) {
+        console.error(`❌ [ROUTE GENERATOR] POI ${index + 1} (${poi?.name}) не имеет валидных координат!`, {
+          coordinates: coords,
+          latValue,
+          lngValue,
+          latNum,
+          lngNum
+        });
+      }
     });
   }, [pois, userLocation]);
 
@@ -48,18 +78,38 @@ const RouteGenerator: React.FC<RouteGeneratorProps> = ({ pois, onNavigate, userL
       return { totalTime: 0, totalDistance: 0, steps: [] };
     }
 
-    // Фильтруем POI с валидными координатами
+    // Фильтруем POI с валидными координатами и нормализуем их
     const validPOIs = pois.filter(poi => {
-      const isValid = poi && 
-        poi.coordinates && 
-        typeof poi.coordinates.lat === 'number' && 
-        typeof poi.coordinates.lng === 'number' &&
-        !isNaN(poi.coordinates.lat) &&
-        !isNaN(poi.coordinates.lng);
-      
-      if (!isValid) {
-        console.warn('🗺️ [ROUTE GENERATOR] POI с невалидными координатами:', poi?.name);
+      if (!poi || !poi.coordinates) {
+        console.warn('🗺️ [ROUTE GENERATOR] POI без объекта coordinates:', poi?.name);
+        return false;
       }
+      
+      // Пытаемся получить координаты, поддерживая строки и числа
+      const latValue = poi.coordinates.lat;
+      const lngValue = poi.coordinates.lng;
+      const latNum = latValue !== null && latValue !== undefined ? Number(latValue) : NaN;
+      const lngNum = lngValue !== null && lngValue !== undefined ? Number(lngValue) : NaN;
+      
+      const isValid = !isNaN(latNum) && !isNaN(lngNum) && 
+        latNum >= -90 && latNum <= 90 && 
+        lngNum >= -180 && lngNum <= 180;
+      
+      if (isValid) {
+        // Нормализуем координаты в числа
+        poi.coordinates.lat = latNum;
+        poi.coordinates.lng = lngNum;
+      } else {
+        console.warn('🗺️ [ROUTE GENERATOR] POI с невалидными координатами:', {
+          name: poi?.name,
+          coordinates: poi.coordinates,
+          latValue,
+          lngValue,
+          latNum,
+          lngNum
+        });
+      }
+      
       return isValid;
     });
 

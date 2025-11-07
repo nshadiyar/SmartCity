@@ -196,7 +196,20 @@ const ResultsPage: React.FC<ResultsPageProps> = ({
                 <div className="poi-actions">
                   <button
                     className="action-btn secondary"
-                    onClick={() => onAddToRoute(rec.poi)}
+                    onClick={() => {
+                      console.log('📌 [RESULTS] Add to Route clicked for POI:', {
+                        name: rec.poi?.name,
+                        coordinates: rec.poi?.coordinates,
+                        fullPoi: rec.poi
+                      });
+                      // Убеждаемся, что мы передаем POI с координатами
+                      if (rec.poi && rec.poi.coordinates) {
+                        onAddToRoute(rec.poi);
+                      } else {
+                        console.error('❌ [RESULTS] POI не имеет координат:', rec.poi);
+                        alert('Error: This place does not have valid coordinates');
+                      }
+                    }}
                     disabled={routePOIs.length >= 3}
                   >
                     {routePOIs.length >= 3 ? 'Route full (3 places)' : 'Add to Route'}

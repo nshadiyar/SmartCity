@@ -81,14 +81,6 @@ body {
   opacity: 0.8;
 }
 
-.logo-icon {
-  font-size: 28px;
-  background: linear-gradient(135deg, var(--primary-blue), var(--primary-blue-dark));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
 .logo-text {
   display: flex;
   flex-direction: column;
@@ -130,19 +122,6 @@ body {
 .nav-link:hover {
   color: var(--text-primary);
   background: var(--bg-light);
-}
-
-.nav-link.ai-chat {
-  background: linear-gradient(135deg, var(--primary-blue), var(--primary-blue-dark));
-  color: white;
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-weight: 600;
-}
-
-.nav-link.ai-chat:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
 }
 
 .header-actions {
@@ -2493,7 +2472,9 @@ body {
 }
 
 /* Leaflet Routing Machine стили */
+/* Hide instructions panel by default */
 .leaflet-routing-container {
+  display: none !important;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
   border-radius: 12px;
@@ -2525,6 +2506,7 @@ body {
 }
 
 .leaflet-routing-container-hide {
+  display: none !important;
   background: rgba(102, 126, 234, 0.9);
   color: white;
   padding: 8px 12px;

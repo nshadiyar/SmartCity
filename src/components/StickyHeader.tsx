@@ -9,7 +9,6 @@ const StickyHeader: React.FC<StickyHeaderProps> = ({ onNavigate }) => {
     <header className="sticky-header">
       <div className="header-content">
         <div className="logo" onClick={() => onNavigate('landing')}>
-          <div className="logo-icon">🏙️</div>
           <div className="logo-text">
             <span className="logo-main">Astana</span>
             <span className="logo-sub">Walks</span>
@@ -27,16 +26,13 @@ const StickyHeader: React.FC<StickyHeaderProps> = ({ onNavigate }) => {
             className="nav-link"
             onClick={() => onNavigate('time-weather')}
           >
-            🌤️ Time & Weather
+            Time & Weather
           </button>
           <button
             className="nav-link"
             onClick={() => onNavigate('results')}
           >
             My Walks
-          </button>
-          <button className="nav-link ai-chat">
-            AI Chat
           </button>
         </nav>
 

@@ -44,14 +44,6 @@ const POIDetailPage: React.FC<POIDetailPageProps> = ({
 
   return (
     <div className="poi-detail-page">
-      {/* Photo Banner */}
-      <div className="poi-banner">
-        <div className="banner-placeholder">
-          <div className="banner-icon">{getCategoryIcon(poi.category)}</div>
-          <div className="banner-overlay"></div>
-        </div>
-      </div>
-
       {/* Content */}
       <div className="poi-content">
         <div className="poi-header">
@@ -82,12 +74,14 @@ const POIDetailPage: React.FC<POIDetailPageProps> = ({
               {poi.workingHours || 'Hours not specified'}
             </span>
           </div>
-          <div className="info-item">
-            <span className="info-icon">⭐</span>
-            <span className="info-text">
-              {poi.rating || 'Not rated'}
-            </span>
-          </div>
+          {poi.rating && (
+            <div className="info-item">
+              <span className="info-icon">⭐</span>
+              <span className="info-text">
+                {poi.rating}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Why Recommended - показываем только если есть recommendation */}

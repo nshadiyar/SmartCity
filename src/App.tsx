@@ -8,6 +8,7 @@ import RouteGenerator from './pages/RouteGenerator';
 import TimeWeatherPage from './pages/TimeWeatherPage';
 import StickyHeader from './components/StickyHeader';
 import FloatingChatButton from './components/FloatingChatButton';
+import RealtimeChat from './components/RealtimeChat';
 import { GroupType } from './components/GroupFilter';
 import './App.css';
 
@@ -48,6 +49,7 @@ function App() {
   const [currentPage, setCurrentPage] = useState<PageType>('landing');
   const [selectedPOI, setSelectedPOI] = useState<any>(null);
   const [selectedRecommendation, setSelectedRecommendation] = useState<Recommendation | null>(null);
+  const [isRealtimeChatOpen, setIsRealtimeChatOpen] = useState<boolean>(false);
   const [routePOIs, setRoutePOIs] = useState<any[]>([]);
   const [previousPage, setPreviousPage] = useState<PageType>('landing'); // Для отслеживания предыдущей страницы
 
@@ -434,10 +436,19 @@ function App() {
     console.log('📋 [CONVERT] Входные данные API POI:', JSON.stringify(apiPOI, null, 2));
     
     // Используем координаты из API или центр Астаны
-    const poiLat = (apiPOI.latitude !== null && apiPOI.latitude !== undefined) ? apiPOI.latitude : 51.1694;
-    const poiLng = (apiPOI.longitude !== null && apiPOI.longitude !== undefined) ? apiPOI.longitude : 71.4491;
+    // Важно: проверяем, что координаты действительно числа
+    let poiLat = 51.1694;
+    let poiLng = 71.4491;
     
-    console.log('📍 [CONVERT] Координаты POI:', { lat: poiLat, lng: poiLng });
+    if (apiPOI.latitude !== null && apiPOI.latitude !== undefined && !isNaN(Number(apiPOI.latitude))) {
+      poiLat = Number(apiPOI.latitude);
+    }
+    if (apiPOI.longitude !== null && apiPOI.longitude !== undefined && !isNaN(Number(apiPOI.longitude))) {
+      poiLng = Number(apiPOI.longitude);
+    }
+    
+    console.log('📍 [CONVERT] Координаты POI (raw):', { lat: apiPOI.latitude, lng: apiPOI.longitude });
+    console.log('📍 [CONVERT] Координаты POI (processed):', { lat: poiLat, lng: poiLng });
     console.log('📍 [CONVERT] Координаты пользователя:', userLoc);
 
     const distance = calculateDistance(userLoc.lat, userLoc.lng, poiLat, poiLng);
@@ -453,7 +464,10 @@ function App() {
       category: apiPOI.category || apiPOI.subcategory || 'Место',
       description: apiPOI.why || `Интересное место в ${apiPOI.city || 'Астане'}`,
       address: apiPOI.address || '',
-      coordinates: { lat: poiLat, lng: poiLng },
+      coordinates: { 
+        lat: Number(poiLat), 
+        lng: Number(poiLng) 
+      },
       rating: undefined,
       workingHours: apiPOI.working_hours || '',
       phone: apiPOI.phone || '',
@@ -474,8 +488,7 @@ function App() {
         apiPOI.subcategory?.toLowerCase() || '',
         ...(apiPOI.why?.toLowerCase().includes('тих') ? ['тихое'] : []),
         ...(apiPOI.why?.toLowerCase().includes('дет') ? ['дети'] : []),
-        ...(apiPOI.why?.toLowerCase().includes('кафе') ? ['кафе'] : []),
-        ...(apiPOI.why?.toLowerCase().includes('туалет') ? ['туалет'] : [])
+        ...(apiPOI.why?.toLowerCase().includes('кафе') ? ['кафе'] : [])
       ].filter(Boolean)
     };
 
@@ -659,6 +672,28 @@ function App() {
   };
 
   const handleAddToRoute = (poi: any) => {
+    console.log('➕ [APP] Adding POI to route:', {
+      id: poi?.id,
+      name: poi?.name,
+      coordinates: poi?.coordinates,
+      hasCoordinates: poi?.coordinates && 
+        typeof poi.coordinates.lat === 'number' && 
+        typeof poi.coordinates.lng === 'number' &&
+        !isNaN(poi.coordinates.lat) && 
+        !isNaN(poi.coordinates.lng)
+    });
+    
+    // Проверяем, что POI имеет координаты
+    if (!poi || !poi.coordinates || 
+        typeof poi.coordinates.lat !== 'number' || 
+        typeof poi.coordinates.lng !== 'number' ||
+        isNaN(poi.coordinates.lat) || 
+        isNaN(poi.coordinates.lng)) {
+      console.error('❌ [APP] POI не имеет валидных координат:', poi);
+      showToast('Error: POI missing valid coordinates');
+      return;
+    }
+    
     setRoutePOIs(prev => {
       // Limit route to 3 places
       if (prev.length >= 3) {
@@ -670,17 +705,50 @@ function App() {
         showToast('This place is already added to the route');
         return prev;
       }
-      const newRoute = [...prev, poi];
+      // Убеждаемся, что мы добавляем полный объект POI с координатами
+      // Нормализуем координаты в числа, если они строки
+      const latValue = poi.coordinates.lat;
+      const lngValue = poi.coordinates.lng;
+      const latNum = Number(latValue);
+      const lngNum = Number(lngValue);
+      
+      // Проверяем еще раз после преобразования
+      if (isNaN(latNum) || isNaN(lngNum)) {
+        console.error('❌ [APP] Координаты не могут быть преобразованы в числа:', { latValue, lngValue });
+        showToast('Error: Invalid coordinates format');
+        return prev; // Возвращаем предыдущее состояние
+      }
+      
+      const poiToAdd = {
+        ...poi,
+        coordinates: {
+          lat: latNum,
+          lng: lngNum
+        }
+      };
+      const newRoute = [...prev, poiToAdd];
+      console.log('✅ [APP] POI added to route. Total:', newRoute.length);
+      console.log('✅ [APP] Route POIs:', newRoute.map(p => ({
+        name: p.name,
+        coordinates: p.coordinates
+      })));
       showToast(`Added to route (${newRoute.length}/3)`);
       return newRoute;
     });
   };
 
   const handleStartRoute = () => {
+    console.log('🚶 [APP] Start Route clicked, routePOIs:', routePOIs.length);
     if (routePOIs.length === 0) {
+      console.warn('🚶 [APP] No places in route');
       showToast('Add places to your route');
       return;
     }
+    console.log('🚶 [APP] Navigating to route-generator page');
+    console.log('🚶 [APP] Route POIs:', routePOIs.map(poi => ({
+      name: poi.name,
+      coordinates: poi.coordinates
+    })));
     setCurrentPage('route-generator');
   };
 
@@ -824,7 +892,10 @@ function App() {
       <main className="main-content">
         {renderPage()}
       </main>
-      <FloatingChatButton onClick={() => navigateToPage('landing')} />
+      <FloatingChatButton onClick={() => setIsRealtimeChatOpen(true)} />
+      {isRealtimeChatOpen && (
+        <RealtimeChat onClose={() => setIsRealtimeChatOpen(false)} />
+      )}
     </div>
   );
 }

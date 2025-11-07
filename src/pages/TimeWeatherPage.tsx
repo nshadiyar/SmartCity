@@ -34,7 +34,7 @@ const TimeWeatherPage: React.FC<TimeWeatherPageProps> = ({
     morning: {
       bg: 'linear-gradient(135deg, #FFE5B4 0%, #FFCDB2 50%, #FFB6C1 100%)',
       accent: '#FF8C69',
-      icon: '🌅',
+      icon: '',
       title: 'Morning Vibes',
       description: 'Start your day with fresh energy',
       keywords: ['coffee', 'breakfast', 'fresh air', 'morning walk', 'sunrise']
@@ -42,7 +42,7 @@ const TimeWeatherPage: React.FC<TimeWeatherPageProps> = ({
     afternoon: {
       bg: 'linear-gradient(135deg, #87CEEB 0%, #98FB98 50%, #F0E68C 100%)',
       accent: '#32CD32',
-      icon: '☀️',
+      icon: '',
       title: 'Afternoon Adventure',
       description: 'Make the most of daylight hours',
       keywords: ['lunch', 'outdoor', 'active', 'exploration', 'daylight']
@@ -50,7 +50,7 @@ const TimeWeatherPage: React.FC<TimeWeatherPageProps> = ({
     evening: {
       bg: 'linear-gradient(135deg, #FF69B4 0%, #9370DB 50%, #4B0082 100%)',
       accent: '#9370DB',
-      icon: '🌆',
+      icon: '',
       title: 'Evening Magic',
       description: 'Wind down with perfect ambiance',
       keywords: ['romantic', 'dinner', 'sunset', 'relaxing', 'cozy']
@@ -58,7 +58,7 @@ const TimeWeatherPage: React.FC<TimeWeatherPageProps> = ({
     night: {
       bg: 'linear-gradient(135deg, #2C3E50 0%, #34495E 50%, #2C3E50 100%)',
       accent: '#FFD700',
-      icon: '🌙',
+      icon: '',
       title: 'Night Life',
       description: 'Discover the city after dark',
       keywords: ['night', 'entertainment', 'clubs', 'late night', 'city lights']
@@ -67,34 +67,34 @@ const TimeWeatherPage: React.FC<TimeWeatherPageProps> = ({
 
   // Weather condition mappings
   const weatherConditions = {
-    0: { condition: 'clear', icon: '☀️', keywords: ['sunny', 'outdoor', 'bright'] },
-    1: { condition: 'mostly_clear', icon: '🌤️', keywords: ['sunny', 'outdoor', 'mild'] },
-    2: { condition: 'partly_cloudy', icon: '⛅', keywords: ['cloudy', 'outdoor', 'comfortable'] },
-    3: { condition: 'overcast', icon: '☁️', keywords: ['cloudy', 'indoor', 'cozy'] },
-    45: { condition: 'foggy', icon: '🌫️', keywords: ['foggy', 'indoor', 'mysterious'] },
-    48: { condition: 'rime_fog', icon: '🌫️', keywords: ['foggy', 'indoor', 'unique'] },
-    51: { condition: 'light_drizzle', icon: '🌦️', keywords: ['rainy', 'indoor', 'cozy'] },
-    53: { condition: 'drizzle', icon: '🌦️', keywords: ['rainy', 'indoor', 'comfortable'] },
-    55: { condition: 'heavy_drizzle', icon: '🌧️', keywords: ['rainy', 'indoor', 'dry'] },
-    56: { condition: 'light_freezing_drizzle', icon: '🌧️', keywords: ['rainy', 'indoor', 'warm'] },
-    57: { condition: 'freezing_drizzle', icon: '🌧️', keywords: ['rainy', 'indoor', 'warm'] },
-    61: { condition: 'light_rain', icon: '🌦️', keywords: ['rainy', 'indoor', 'cozy'] },
-    63: { condition: 'rain', icon: '🌧️', keywords: ['rainy', 'indoor', 'comfortable'] },
-    65: { condition: 'heavy_rain', icon: '🌧️', keywords: ['rainy', 'indoor', 'dry'] },
-    66: { condition: 'light_freezing_rain', icon: '🌧️', keywords: ['rainy', 'indoor', 'warm'] },
-    67: { condition: 'freezing_rain', icon: '🌧️', keywords: ['rainy', 'indoor', 'warm'] },
-    71: { condition: 'light_snow', icon: '🌨️', keywords: ['snowy', 'indoor', 'warm'] },
-    73: { condition: 'snow', icon: '❄️', keywords: ['snowy', 'indoor', 'cozy'] },
-    75: { condition: 'heavy_snow', icon: '❄️', keywords: ['snowy', 'indoor', 'warm'] },
-    77: { condition: 'snow_grains', icon: '❄️', keywords: ['snowy', 'indoor', 'unique'] },
-    80: { condition: 'light_rain_showers', icon: '🌦️', keywords: ['rainy', 'indoor', 'cozy'] },
-    81: { condition: 'rain_showers', icon: '🌧️', keywords: ['rainy', 'indoor', 'comfortable'] },
-    82: { condition: 'heavy_rain_showers', icon: '🌧️', keywords: ['rainy', 'indoor', 'dry'] },
-    85: { condition: 'light_snow_showers', icon: '🌨️', keywords: ['snowy', 'indoor', 'warm'] },
-    86: { condition: 'snow_showers', icon: '❄️', keywords: ['snowy', 'indoor', 'cozy'] },
-    95: { condition: 'thunderstorm', icon: '⛈️', keywords: ['stormy', 'indoor', 'safe'] },
-    96: { condition: 'thunderstorm_hail', icon: '⛈️', keywords: ['stormy', 'indoor', 'safe'] },
-    99: { condition: 'heavy_thunderstorm_hail', icon: '⛈️', keywords: ['stormy', 'indoor', 'safe'] }
+    0: { condition: 'clear', icon: '', keywords: ['sunny', 'outdoor', 'bright'] },
+    1: { condition: 'mostly_clear', icon: '', keywords: ['sunny', 'outdoor', 'mild'] },
+    2: { condition: 'partly_cloudy', icon: '', keywords: ['cloudy', 'outdoor', 'comfortable'] },
+    3: { condition: 'overcast', icon: '', keywords: ['cloudy', 'indoor', 'cozy'] },
+    45: { condition: 'foggy', icon: '', keywords: ['foggy', 'indoor', 'mysterious'] },
+    48: { condition: 'rime_fog', icon: '', keywords: ['foggy', 'indoor', 'unique'] },
+    51: { condition: 'light_drizzle', icon: '', keywords: ['rainy', 'indoor', 'cozy'] },
+    53: { condition: 'drizzle', icon: '', keywords: ['rainy', 'indoor', 'comfortable'] },
+    55: { condition: 'heavy_drizzle', icon: '', keywords: ['rainy', 'indoor', 'dry'] },
+    56: { condition: 'light_freezing_drizzle', icon: '', keywords: ['rainy', 'indoor', 'warm'] },
+    57: { condition: 'freezing_drizzle', icon: '', keywords: ['rainy', 'indoor', 'warm'] },
+    61: { condition: 'light_rain', icon: '', keywords: ['rainy', 'indoor', 'cozy'] },
+    63: { condition: 'rain', icon: '', keywords: ['rainy', 'indoor', 'comfortable'] },
+    65: { condition: 'heavy_rain', icon: '', keywords: ['rainy', 'indoor', 'dry'] },
+    66: { condition: 'light_freezing_rain', icon: '', keywords: ['rainy', 'indoor', 'warm'] },
+    67: { condition: 'freezing_rain', icon: '', keywords: ['rainy', 'indoor', 'warm'] },
+    71: { condition: 'light_snow', icon: '', keywords: ['snowy', 'indoor', 'warm'] },
+    73: { condition: 'snow', icon: '', keywords: ['snowy', 'indoor', 'cozy'] },
+    75: { condition: 'heavy_snow', icon: '', keywords: ['snowy', 'indoor', 'warm'] },
+    77: { condition: 'snow_grains', icon: '', keywords: ['snowy', 'indoor', 'unique'] },
+    80: { condition: 'light_rain_showers', icon: '', keywords: ['rainy', 'indoor', 'cozy'] },
+    81: { condition: 'rain_showers', icon: '', keywords: ['rainy', 'indoor', 'comfortable'] },
+    82: { condition: 'heavy_rain_showers', icon: '', keywords: ['rainy', 'indoor', 'dry'] },
+    85: { condition: 'light_snow_showers', icon: '', keywords: ['snowy', 'indoor', 'warm'] },
+    86: { condition: 'snow_showers', icon: '', keywords: ['snowy', 'indoor', 'cozy'] },
+    95: { condition: 'thunderstorm', icon: '', keywords: ['stormy', 'indoor', 'safe'] },
+    96: { condition: 'thunderstorm_hail', icon: '', keywords: ['stormy', 'indoor', 'safe'] },
+    99: { condition: 'heavy_thunderstorm_hail', icon: '', keywords: ['stormy', 'indoor', 'safe'] }
   };
 
   // Update time every minute
@@ -133,7 +133,7 @@ const TimeWeatherPage: React.FC<TimeWeatherPageProps> = ({
       if (data.current_weather) {
         const weatherCode = data.current_weather.weathercode;
         const condition = weatherConditions[weatherCode as keyof typeof weatherConditions] ||
-                         { condition: 'unknown', icon: '❓', keywords: ['indoor'] };
+                         { condition: 'unknown', icon: '', keywords: ['indoor'] };
 
         setWeather({
           temperature: Math.round(data.current_weather.temperature),
@@ -225,7 +225,6 @@ const TimeWeatherPage: React.FC<TimeWeatherPageProps> = ({
             </div>
           ) : (
             <div className="weather-placeholder">
-              <span>📍</span>
               <span>Location needed for weather</span>
             </div>
           )}
@@ -272,7 +271,7 @@ const TimeWeatherPage: React.FC<TimeWeatherPageProps> = ({
             </>
           ) : (
             <>
-              🎯 Discover Perfect Place
+              Discover Perfect Place
             </>
           )}
         </button>

@@ -91,9 +91,18 @@ const Map: React.FC<MapProps> = ({
     );
   }, [map, onLocationUpdate]);
 
+  // Флаг для предотвращения множественных одновременных вызовов
+  const isCreatingRouteRef = useRef(false);
+
   // Функция для построения маршрута
   const createRoute = useCallback((startLat: number, startLng: number, endLat: number, endLng: number, poiName: string) => {
-    console.log('🗺️ [MAP] createRoute вызвана:', { startLat, startLng, endLat, endLng, poiName });
+    // Защита от множественных вызовов
+    if (isCreatingRouteRef.current) {
+      console.log('🗺️ [MAP] Маршрут уже строится, пропускаем повторный вызов');
+      return;
+    }
+
+    // Создание маршрута запущено
     
     if (!map) {
       console.error('🗺️ [MAP] Map not initialized');
@@ -101,8 +110,7 @@ const Map: React.FC<MapProps> = ({
       return;
     }
 
-    // Предотвращаем повторные вызовы (только для кнопки, не блокируем автоматическое построение)
-    // Для кнопки это не критично, так как пользователь может захотеть перестроить маршрут
+    isCreatingRouteRef.current = true;
 
     // Check coordinate validity
     if (isNaN(startLat) || isNaN(startLng) || isNaN(endLat) || isNaN(endLng)) {
@@ -168,62 +176,52 @@ const Map: React.FC<MapProps> = ({
           serviceUrl: 'https://router.project-osrm.org/route/v1',
           profile: 'foot'
         });
-        console.log('🗺️ [MAP] Используется OSRM router для пешеходных маршрутов');
+        // OSRM router используется для пешеходных маршрутов
       }
 
       const control = window.L.Routing.control(routingOptions);
 
-      // Обработка событий маршрута
+
+      // Обработка событий маршрута - только один раз, ПЕРЕД добавлением на карту
+      let errorHandled = false;
+      let successHandled = false;
+
       control.on('routingerror', (e: any) => {
-        console.error('🗺️ [MAP] Ошибка построения маршрута:', e);
-        console.warn('🗺️ [MAP] Попробуйте еще раз или проверьте подключение к интернету');
+        if (errorHandled || !isCreatingRouteRef.current) return;
+        errorHandled = true;
+        
+        const errorMsg = e.error?.message || e.message || 'Unknown routing error';
+        console.error('🗺️ [MAP] Ошибка построения маршрута:', errorMsg);
+        isCreatingRouteRef.current = false;
       });
 
-      control.on('routesfound', (e: any) => {
-        console.log('🗺️ [MAP] ✅ Маршрут успешно построен!', e);
-        const routes = e.routes;
-        if (routes && routes.length > 0) {
-          const route = routes[0];
-          console.log('🗺️ [MAP] Количество маршрутов:', routes.length);
-          if (route.summary) {
-            console.log('🗺️ [MAP] Длина маршрута:', Math.round(route.summary.totalDistance), 'м');
-            console.log('🗺️ [MAP] Время маршрута:', Math.round(route.summary.totalTime / 60), 'мин');
+      control.on('routesfound', () => {
+        if (successHandled || !isCreatingRouteRef.current) return;
+        successHandled = true;
+        
+        console.log('🗺️ [MAP] ✅ Маршрут успешно построен');
+        isCreatingRouteRef.current = false;
+        
+        // Скрываем контейнер с инструкциями
+        setTimeout(() => {
+          const instructionsContainer = document.querySelector('.leaflet-routing-container');
+          if (instructionsContainer) {
+            (instructionsContainer as HTMLElement).style.display = 'none';
           }
-        }
+        }, 100);
       });
 
       control.addTo(map);
       setRoutingControl(control);
-      console.log('🗺️ [MAP] ✅ Маршрут добавлен на карту');
 
-      // Обработка событий маршрута
-      control.on('routingerror', (e: any) => {
-        console.error('🗺️ [MAP] Ошибка построения маршрута к POI:', e);
-      });
-
-      control.on('routesfound', () => {
-        console.log('🗺️ [MAP] ✅ Маршрут к POI успешно построен');
-      });
-
-      // Добавляем информационное сообщение
-      setTimeout(() => {
-        const instructions = document.querySelector('.leaflet-routing-container-hide');
-        if (instructions) {
-          instructions.innerHTML = `
-            <div style="padding: 10px; background: rgba(102, 126, 234, 0.9); color: white; border-radius: 8px; margin-top: 10px;">
-              <strong>🚶 Route to ${poiName}</strong><br>
-              <small>Follow the directions for walking</small>
-            </div>
-          `;
-        }
-      }, 1000);
 
     } catch (error) {
       console.error('🗺️ [MAP] ❌ Error creating route:', error);
-      alert('Failed to build route. Check the console for details.');
+      isCreatingRouteRef.current = false; // Сбрасываем флаг при ошибке
+      alert('Failed to build route. The routing service may be temporarily unavailable. Please try again later.');
     }
 
-  }, [map]);
+  }, [map, routingControl]);
 
   // Функция для построения маршрута через все рекомендованные места
   const createRouteToAllRecommendations = useCallback(() => {
@@ -303,7 +301,7 @@ const Map: React.FC<MapProps> = ({
           serviceUrl: 'https://router.project-osrm.org/route/v1',
           profile: 'foot'
         });
-        console.log('🗺️ [MAP] Используется OSRM router для пешеходных маршрутов');
+        // OSRM router используется для пешеходных маршрутов
       }
 
       const control = window.L.Routing.control(routingOptions);
@@ -321,6 +319,13 @@ const Map: React.FC<MapProps> = ({
       control.on('routesfound', () => {
         console.log('🗺️ [MAP] ✅ Маршрут успешно построен через все рекомендации');
         isBuildingRouteRef.current = false;
+        // Скрываем панель инструкций маршрута
+        setTimeout(() => {
+          const instructionsContainer = document.querySelector('.leaflet-routing-container');
+          if (instructionsContainer) {
+            (instructionsContainer as HTMLElement).style.display = 'none';
+          }
+        }, 100);
       });
 
       // Добавляем информационное сообщение
@@ -477,6 +482,13 @@ const Map: React.FC<MapProps> = ({
         const poiName = rec.poi?.name || 'Place';
         const safePoiName = poiName.replace(/'/g, "\\'");
 
+        // Создаем уникальный ID для кнопки
+        const buttonId = `route-btn-${rec.poi.id || Date.now()}`;
+        const startLat = currentLocation?.lat || userLocation?.lat || 51.1694;
+        const startLng = currentLocation?.lng || userLocation?.lng || 71.4491;
+        const endLat = rec.poi.coordinates.lat;
+        const endLng = rec.poi.coordinates.lng;
+
         const marker = window.L.marker([rec.poi.coordinates.lat, rec.poi.coordinates.lng], {
           icon: markerIcon
         })
@@ -499,25 +511,7 @@ const Map: React.FC<MapProps> = ({
                 ${rec.poi.workingHours ? `<strong>Hours:</strong> ${rec.poi.workingHours}<br>` : ''}
               </div>
               <div style="display: flex; gap: 8px;">
-                <button onclick="(function() {
-                  const startLat = ${currentLocation?.lat || userLocation?.lat || 51.1694};
-                  const startLng = ${currentLocation?.lng || userLocation?.lng || 71.4491};
-                  const endLat = ${rec.poi.coordinates.lat};
-                  const endLng = ${rec.poi.coordinates.lng};
-                  const poiName = ${JSON.stringify(poiName)};
-                  console.log('🗺️ [BUTTON] Кнопка маршрута нажата:', { startLat, startLng, endLat, endLng, poiName });
-                  if (window.mapCreateRoute) {
-                    try {
-                      window.mapCreateRoute(startLat, startLng, endLat, endLng, poiName);
-                    } catch (error) {
-                      console.error('🗺️ [BUTTON] Error calling mapCreateRoute:', error);
-                      alert('Error building route. Check the console for details.');
-                    }
-                  } else {
-                    console.error('🗺️ [BUTTON] window.mapCreateRoute not found!');
-                    alert('Route function unavailable. Please try refreshing the page.');
-                  }
-                })()" style="
+                <button id="${buttonId}" style="
                   flex: 1;
                   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                   color: white;
@@ -548,6 +542,52 @@ const Map: React.FC<MapProps> = ({
               </div>
             </div>
           `);
+
+        // Добавляем обработчик события после создания popup (только один раз)
+        marker.once('popupopen', () => {
+          // Используем once вместо on, чтобы обработчик добавился только один раз
+          setTimeout(() => {
+            const button = document.getElementById(buttonId);
+            if (button && !button.hasAttribute('data-handler-added')) {
+              button.setAttribute('data-handler-added', 'true');
+              
+              // Используем addEventListener вместо onclick для лучшего контроля
+              button.addEventListener('click', function routeButtonHandler(e: Event) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                
+                // Защита от множественных кликов
+                const btn = e.target as HTMLButtonElement;
+                if (btn.hasAttribute('data-processing')) {
+                  return false;
+                }
+                btn.setAttribute('data-processing', 'true');
+                btn.disabled = true;
+                
+                if (typeof window !== 'undefined' && (window as any).mapCreateRoute) {
+                  try {
+                    (window as any).mapCreateRoute(startLat, startLng, endLat, endLng, poiName);
+                    // Сбрасываем флаг через 5 секунд
+                    setTimeout(() => {
+                      btn.removeAttribute('data-processing');
+                      btn.disabled = false;
+                    }, 5000);
+                  } catch (error) {
+                    console.error('🗺️ [BUTTON] Error calling mapCreateRoute:', error);
+                    btn.removeAttribute('data-processing');
+                    btn.disabled = false;
+                  }
+                } else {
+                  console.error('🗺️ [BUTTON] window.mapCreateRoute not found!');
+                  btn.removeAttribute('data-processing');
+                  btn.disabled = false;
+                }
+                return false;
+              }, { once: false, capture: true });
+            }
+          }, 200);
+        });
 
         newMarkers.push(marker);
       });
@@ -695,17 +735,14 @@ const Map: React.FC<MapProps> = ({
   useEffect(() => {
     if (!map || !userLocation) return;
 
-    // Если selectedPOI null, сбрасываем маршрут только если нет routePOIs
+    // Если selectedPOI null, не сбрасываем маршрут - пользователь может видеть построенный маршрут
+    // Маршрут будет сброшен только при следующем построении нового маршрута
     if (!selectedPOI) {
-      // Не сбрасываем маршрут, если есть routePOIs - они имеют приоритет
-      if (routePOIs.length === 0) {
-        clearRoute();
-      }
       return;
     }
 
     // Предотвращаем повторные вызовы
-    if (isBuildingRouteRef.current) {
+    if (isBuildingRouteRef.current || isCreatingRouteRef.current) {
       console.log('🗺️ [MAP] Маршрут уже строится для selectedPOI, пропускаем');
       return;
     }
@@ -722,7 +759,7 @@ const Map: React.FC<MapProps> = ({
     });
 
     createRoute(startLat, startLng, endLat, endLng, selectedPOI.name);
-  }, [selectedPOI, map, userLocation, createRoute, clearRoute, routePOIs]);
+  }, [selectedPOI, map, userLocation, createRoute, routePOIs]);
 
   // Функция для построения маршрута через routePOIs (мини-маршрут из 3 мест)
   const createRouteThroughPOIs = useCallback(() => {
@@ -739,23 +776,45 @@ const Map: React.FC<MapProps> = ({
 
     isBuildingRouteRef.current = true;
 
-    // Фильтруем POI с валидными координатами
+    // Фильтруем POI с валидными координатами и нормализуем их
     const validPOIs = routePOIs.filter(poi => {
-      const hasValidCoords = poi && 
-        poi.coordinates && 
-        typeof poi.coordinates.lat === 'number' && 
-        typeof poi.coordinates.lng === 'number' &&
-        !isNaN(poi.coordinates.lat) &&
-        !isNaN(poi.coordinates.lng);
+      if (!poi || !poi.coordinates) {
+        console.warn('🗺️ [MAP] POI без объекта coordinates:', poi?.name || 'Unknown');
+        return false;
+      }
       
-      if (!hasValidCoords) {
-        console.warn('🗺️ [MAP] POI без валидных координат:', poi?.name || 'Unknown');
+      // Пытаемся получить координаты, поддерживая строки и числа
+      const latValue = poi.coordinates.lat;
+      const lngValue = poi.coordinates.lng;
+      const latNum = latValue !== null && latValue !== undefined ? Number(latValue) : NaN;
+      const lngNum = lngValue !== null && lngValue !== undefined ? Number(lngValue) : NaN;
+      
+      const hasValidCoords = !isNaN(latNum) && !isNaN(lngNum) && 
+        latNum >= -90 && latNum <= 90 && 
+        lngNum >= -180 && lngNum <= 180;
+      
+      if (hasValidCoords) {
+        // Нормализуем координаты в числа
+        poi.coordinates.lat = latNum;
+        poi.coordinates.lng = lngNum;
+      } else {
+        console.warn('🗺️ [MAP] POI без валидных координат:', {
+          name: poi?.name || 'Unknown',
+          coordinates: poi.coordinates,
+          latValue,
+          lngValue,
+          latNum,
+          lngNum,
+          latType: typeof latValue,
+          lngType: typeof lngValue
+        });
       }
       return hasValidCoords;
     });
 
     if (validPOIs.length === 0) {
       console.warn('🗺️ [MAP] Нет POI с валидными координатами');
+      isBuildingRouteRef.current = false;
       return;
     }
 
@@ -778,10 +837,17 @@ const Map: React.FC<MapProps> = ({
       console.log('🗺️ [MAP] Используем центр Астаны как начальную точку (fallback)');
     }
 
-    // Удаляем предыдущий маршрут
+    // Удаляем предыдущий маршрут безопасно
     if (routingControl) {
-      map.removeControl(routingControl);
-      setRoutingControl(null);
+      try {
+        if (map.hasLayer && map.hasLayer(routingControl)) {
+          map.removeControl(routingControl);
+        }
+        setRoutingControl(null);
+      } catch (error) {
+        console.warn('🗺️ [MAP] Ошибка при удалении предыдущего маршрута:', error);
+        setRoutingControl(null);
+      }
     }
 
     // Создаем waypoints: начало + все места в routePOIs
@@ -792,6 +858,7 @@ const Map: React.FC<MapProps> = ({
 
     if (waypoints.length < 2) {
       console.warn('🗺️ [MAP] Недостаточно точек для построения маршрута:', waypoints.length);
+      isBuildingRouteRef.current = false;
       return;
     }
 
@@ -807,6 +874,7 @@ const Map: React.FC<MapProps> = ({
     // Проверяем наличие Leaflet Routing Machine
     if (!window.L || !window.L.Routing) {
       console.error('🗺️ [MAP] Leaflet Routing Machine не загружен!');
+      isBuildingRouteRef.current = false;
       alert('Error: routing library not loaded. Please refresh the page.');
       return;
     }
@@ -844,48 +912,53 @@ const Map: React.FC<MapProps> = ({
           serviceUrl: 'https://router.project-osrm.org/route/v1',
           profile: 'foot'
         });
-        console.log('🗺️ [MAP] Используется OSRM router для пешеходных маршрутов');
+        // OSRM router используется для пешеходных маршрутов
       } else {
         console.warn('🗺️ [MAP] OSRM router недоступен, используется маршрутизация по умолчанию');
       }
 
       const control = window.L.Routing.control(routingOptions);
 
-      // Обработка событий маршрута
+      // Обработка событий маршрута - только один раз
+      let errorHandled = false;
+      let successHandled = false;
+
       control.on('routingerror', (e: any) => {
-        console.error('🗺️ [MAP] Ошибка построения маршрута:', e);
-        // Не показываем alert, только логируем, чтобы не раздражать пользователя
-        console.warn('🗺️ [MAP] Попробуйте обновить страницу или проверить подключение к интернету');
+        if (errorHandled) return;
+        errorHandled = true;
+        
+        console.error('🗺️ [MAP] Ошибка построения маршрута через routePOIs:', e.error?.message || e.message || e);
+        isBuildingRouteRef.current = false;
       });
 
       control.on('routesfound', (e: any) => {
-        console.log('🗺️ [MAP] ✅ Маршрут успешно построен!', e);
+        if (successHandled) return;
+        successHandled = true;
+        
+        console.log('🗺️ [MAP] ✅ Маршрут через routePOIs успешно построен');
         const routes = e.routes;
         if (routes && routes.length > 0) {
           const route = routes[0];
-          console.log('🗺️ [MAP] Количество маршрутов:', routes.length);
           if (route.summary) {
             console.log('🗺️ [MAP] Длина маршрута:', Math.round(route.summary.totalDistance), 'м');
             console.log('🗺️ [MAP] Время маршрута:', Math.round(route.summary.totalTime / 60), 'мин');
           }
         }
+        
+        isBuildingRouteRef.current = false;
+        
+        // Скрываем панель инструкций маршрута
+        setTimeout(() => {
+          const instructionsContainer = document.querySelector('.leaflet-routing-container');
+          if (instructionsContainer) {
+            (instructionsContainer as HTMLElement).style.display = 'none';
+          }
+        }, 100);
       });
 
       control.addTo(map);
       setRoutingControl(control);
-      isBuildingRouteRef.current = false; // Сбрасываем флаг после добавления
       console.log('🗺️ [MAP] ✅ Маршрутизация добавлена на карту');
-
-      // Обработка событий для routePOIs маршрута
-      control.on('routingerror', (e: any) => {
-        console.error('🗺️ [MAP] Ошибка построения маршрута через routePOIs:', e);
-        isBuildingRouteRef.current = false;
-      });
-
-      control.on('routesfound', () => {
-        console.log('🗺️ [MAP] ✅ Маршрут через routePOIs успешно построен');
-        isBuildingRouteRef.current = false;
-      });
 
       // Добавляем информационное сообщение
       setTimeout(() => {
@@ -915,37 +988,25 @@ const Map: React.FC<MapProps> = ({
       return;
     }
     
-    // Если есть selectedPOI, не строим автоматические маршруты
-    if (selectedPOI) {
-      console.log('🗺️ [MAP] Выбран POI, пропускаем автоматическое построение маршрута');
-      return;
-    }
-
     // Предотвращаем повторные вызовы
     if (isBuildingRouteRef.current) {
       console.log('🗺️ [MAP] Маршрут уже строится, пропускаем автоматическое построение');
       return;
     }
 
-    // Если есть routePOIs, строим маршрут через них (приоритет)
+    // Строим маршрут ТОЛЬКО если пользователь явно добавил места в routePOIs
+    // routePOIs имеет приоритет над selectedPOI для построения маршрута
     if (routePOIs.length > 0) {
       console.log('🗺️ [MAP] Обнаружены routePOIs, строим маршрут:', routePOIs.length);
       // Небольшая задержка для обеспечения готовности карты
       const timer = setTimeout(() => {
         createRouteThroughPOIs();
-      }, 300);
+      }, 500);
       return () => clearTimeout(timer);
     }
 
-    // Иначе строим маршрут через все рекомендации (только если есть userLocation и нет routePOIs)
-    if (recommendations.length > 0 && userLocation && routePOIs.length === 0) {
-      console.log('🗺️ [MAP] Автоматическое построение маршрута ко всем рекомендованным местам');
-      const timer = setTimeout(() => {
-        createRouteToAllRecommendations();
-      }, 300);
-      return () => clearTimeout(timer);
-    }
-  }, [routePOIs, recommendations, map, userLocation, createRouteThroughPOIs, createRouteToAllRecommendations, selectedPOI]);
+    // Удален автоматический маршрут через все рекомендации - теперь маршрут строится только когда пользователь добавляет места в маршрут
+  }, [routePOIs, map, userLocation, createRouteThroughPOIs, selectedPOI]);
 
   return (
     <div className={`map-container ${className}`}>
